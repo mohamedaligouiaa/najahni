@@ -1,0 +1,14 @@
+C:\Users\USER\Downloads\soa_projet\back_end\src\main\java\com\example\soutenance\controller\EtudiantController.java
+C:\Users\USER\Downloads\soa_projet\back_end\src\main\java\com\example\soutenance\controller\AuthController.java
+C:\Users\USER\Downloads\soa_projet\back_end\src\main\java\com\example\soutenance\repository\UserRepository.java
+C:\Users\USER\Downloads\soa_projet\back_end\src\main\java\com\example\soutenance\controller\JuryController.java
+C:\Users\USER\Downloads\soa_projet\back_end\src\main\java\com\example\soutenance\repository\NoteRepository.java
+C:\Users\USER\Downloads\soa_projet\back_end\src\main\java\com\example\soutenance\dto\RegisterRequest.java
+C:\Users\USER\Downloads\soa_projet\back_end\src\main\java\com\example\soutenance\repository\SoutenanceRepository.java
+C:\Users\USER\Downloads\soa_projet\back_end\src\main\java\com\example\soutenance\dto\LoginRequest.java
+C:\Users\USER\Downloads\soa_projet\back_end\src\main\java\com\example\soutenance\model\Soutenance.java
+C:\Users\USER\Downloads\soa_projet\back_end\src\main\java\com\example\soutenance\dto\NoteSubmission.java
+C:\Users\USER\Downloads\soa_projet\back_end\src\main\java\com\example\soutenance\model\User.java
+C:\Users\USER\Downloads\soa_projet\back_end\src\main\java\com\example\soutenance\config\CorsConfig.java
+C:\Users\USER\Downloads\soa_projet\back_end\src\main\java\com\example\soutenance\SoutenanceApplication.java
+C:\Users\USER\Downloads\soa_projet\back_end\src\main\java\com\example\soutenance\model\Note.java
