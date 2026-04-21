@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, DoorOpen, LogOut, User, Plus, Pencil, Trash2, X, Check } from 'lucide-react';
+import { LayoutDashboard, DoorOpen, LogOut, User, Plus, Pencil, Trash2, X, Check, Users, ChevronDown, ChevronRight, GraduationCap, Settings, BookOpen, Search, Filter } from 'lucide-react';
 import api from '../api/axios';
+import GestionJury from '../components/GestionJury';
 
 const DashboardAdmin = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Dashboard');
+  const [expandedMenus, setExpandedMenus] = useState({ 'Gestion des Jury': true });
   const [user, setUser] = useState(null);
   const [salles, setSalles] = useState([]);
   const [message, setMessage] = useState({ text: '', type: '' });
-
-  // Form state
   const [showForm, setShowForm] = useState(false);
-  const [editingSalle, setEditingSalle] = useState(null);
-  const [salleForm, setSalleForm] = useState({ nom: '', capacite: '', localisation: '', disponible: true });
+  const [formData, setFormData] = useState({ nom: '', capacite: '', disponible: true });
+  const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
     fetchUser();
@@ -31,105 +31,155 @@ const DashboardAdmin = () => {
 
   const fetchSalles = async () => {
     try {
-      const res = await api.get('/admin/salles');
+      const res = await api.get('/salles/list');
       setSalles(res.data);
     } catch {
-      console.error('Erreur lors du chargement des salles');
+      console.error('Failed to fetch salles');
     }
   };
 
-  const showMessage = (text, type = 'success') => {
+  const showFeedback = (text, type = 'success') => {
     setMessage({ text, type });
     setTimeout(() => setMessage({ text: '', type: '' }), 3000);
   };
 
   const handleLogout = async () => {
     await api.post('/auth/logout');
+    localStorage.removeItem('user');
     navigate('/login');
   };
 
   const openAddForm = () => {
-    setEditingSalle(null);
-    setSalleForm({ nom: '', capacite: '', localisation: '', disponible: true });
+    setFormData({ nom: '', capacite: '', disponible: true });
+    setEditingId(null);
     setShowForm(true);
   };
 
   const openEditForm = (salle) => {
-    setEditingSalle(salle);
-    setSalleForm({
-      nom: salle.nom,
-      capacite: salle.capacite,
-      localisation: salle.localisation,
-      disponible: salle.disponible,
-    });
+    setFormData({ nom: salle.nom, capacite: salle.capacite, disponible: salle.disponible });
+    setEditingId(salle.id);
     setShowForm(true);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSalleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (editingSalle) {
-        await api.put(`/admin/salles/${editingSalle.id}`, salleForm);
-        showMessage('Salle modifiée avec succès !');
+      if (editingId) {
+        await api.put(`/salles/update/${editingId}`, formData);
+        showFeedback('Salle mise à jour avec succès');
       } else {
-        await api.post('/admin/salles', salleForm);
-        showMessage('Salle ajoutée avec succès !');
+        await api.post('/salles/add', formData);
+        showFeedback('Salle ajoutée avec succès');
       }
       setShowForm(false);
       fetchSalles();
-    } catch {
-      showMessage('Erreur lors de l\'opération.', 'error');
+    } catch (err) {
+      showFeedback('Erreur lors de l\'opération', 'error');
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Confirmer la suppression de cette salle ?')) return;
-    try {
-      await api.delete(`/admin/salles/${id}`);
-      showMessage('Salle supprimée.');
-      fetchSalles();
-    } catch {
-      showMessage('Erreur lors de la suppression.', 'error');
+  const deleteSalle = async (id) => {
+    if (window.confirm('Voulez-vous vraiment supprimer cette salle ?')) {
+      try {
+        await api.delete(`/salles/delete/${id}`);
+        showFeedback('Salle supprimée');
+        fetchSalles();
+      } catch {
+        showFeedback('Erreur lors de la suppression', 'error');
+      }
     }
   };
 
   const sidebarItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} /> },
     { name: 'Gestion des Salles', icon: <DoorOpen size={20} /> },
+    { 
+      name: 'Gestion des Jury', 
+      icon: <Users size={20} />,
+      subItems: [
+        { name: 'Encadrant', tab: 'Jury-Créer', icon: <GraduationCap size={16} /> },
+        { name: 'Modifier jury', tab: 'Jury-Modifier', icon: <Settings size={16} /> },
+        { name: 'Afficher jury', tab: 'Jury-Afficher', icon: <BookOpen size={16} /> }
+      ]
+    },
     { name: 'Profil', icon: <User size={20} /> },
   ];
+
+  const handleMenuClick = (item) => {
+    if (item.subItems) {
+      setExpandedMenus(prev => ({ ...prev, [item.name]: !prev[item.name] }));
+    } else {
+      setActiveTab(item.name);
+    }
+  };
 
   const sallesDisponibles = salles.filter(s => s.disponible).length;
   const sallesOccupees = salles.filter(s => !s.disponible).length;
 
   return (
-    <div className="flex h-screen bg-gray-50 font-sans text-gray-800">
+    <div className="flex h-screen bg-slate-950 font-sans text-slate-100">
       {/* Sidebar */}
-      <div className="w-64 bg-slate-900 border-r shadow-xl flex flex-col text-slate-300">
-        <div className="p-6 border-b border-slate-800">
-          <h1 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">
-            Espace Admin
-          </h1>
+      <div className="w-72 bg-slate-900 border-r border-slate-800 flex flex-col shadow-2xl z-30">
+        <div className="p-8 border-b border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20">
+              <Settings className="text-white" size={24} />
+            </div>
+            <h1 className="text-xl font-bold tracking-tight text-white uppercase tracking-tighter">Admin Portal</h1>
+          </div>
         </div>
-        <nav className="flex-1 overflow-y-auto py-4">
+        
+        <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
           {sidebarItems.map(item => (
-            <button
-              key={item.name}
-              onClick={() => setActiveTab(item.name)}
-              className={`w-full flex items-center gap-4 px-6 py-4 transition-all ${
-                activeTab === item.name
-                  ? 'bg-slate-800 border-r-4 border-violet-400 text-white font-semibold'
-                  : 'hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              {item.icon} {item.name}
-            </button>
+            <div key={item.name}>
+              <button
+                onClick={() => handleMenuClick(item)}
+                className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all group ${
+                  (activeTab === item.name || (item.subItems && item.subItems.some(sub => sub.tab === activeTab)))
+                    ? 'bg-slate-800/50 text-white border border-slate-700'
+                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <span className={(activeTab === item.name || (item.subItems && item.subItems.some(sub => sub.tab === activeTab))) ? 'text-violet-400' : 'text-slate-500 group-hover:text-violet-400'}>
+                    {item.icon}
+                  </span>
+                  <span className="font-semibold">{item.name}</span>
+                </div>
+                {item.subItems && (
+                  expandedMenus[item.name] ? <ChevronDown size={16} /> : <ChevronRight size={16} />
+                )}
+              </button>
+              
+              {item.subItems && expandedMenus[item.name] && (
+                <div className="mt-1 space-y-1">
+                  {item.subItems.map(sub => (
+                    <button
+                      key={sub.name}
+                      onClick={() => setActiveTab(sub.tab)}
+                      className={`w-full flex items-center gap-3 pl-12 pr-4 py-2.5 rounded-xl transition-all text-sm ${
+                        activeTab === sub.tab
+                          ? 'text-violet-400 font-bold bg-violet-400/5'
+                          : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/30'
+                      }`}
+                    >
+                      {sub.icon} {sub.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </nav>
-        <div className="p-4 border-t border-slate-800">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 font-medium transition"
+
+        <div className="p-6 border-t border-slate-800">
+           <div className="bg-slate-800/30 rounded-2xl p-4 mb-4 border border-slate-700/50">
+             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Logged as</p>
+             <p className="text-xs font-bold text-white truncate">{user?.email}</p>
+           </div>
+          <button 
+            onClick={handleLogout} 
+            className="w-full flex items-center justify-center gap-3 py-3 bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500 hover:text-white font-bold transition-all"
           >
             <LogOut size={18} /> Déconnexion
           </button>
@@ -137,138 +187,144 @@ const DashboardAdmin = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white shadow-sm px-8 py-5 flex justify-between items-center z-10">
-          <h2 className="text-xl font-semibold text-gray-800">{activeTab}</h2>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-violet-100 rounded-full flex items-center justify-center text-violet-700 font-bold uppercase shadow-inner">
-              {user?.nom?.charAt(0) || 'A'}
+      <div className="flex-1 flex flex-col overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-600/5 blur-[120px] rounded-full -z-10" />
+        
+        <header className="bg-slate-900/50 backdrop-blur-md border-b border-slate-800 px-10 py-6 flex justify-between items-center z-10">
+          <div className="flex items-center gap-4">
+             <h2 className="text-2xl font-black text-white">{activeTab}</h2>
+             <span className="w-1.5 h-1.5 bg-slate-700 rounded-full" />
+             <p className="text-slate-500 text-sm font-medium">Administration Centrale</p>
+          </div>
+          
+          <div className="flex items-center gap-6">
+            <div className="relative hidden md:block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+              <input 
+                type="text" 
+                placeholder="Rechercher..." 
+                className="bg-slate-800 border border-slate-700 rounded-full pl-10 pr-4 py-2 text-xs focus:ring-2 focus:ring-violet-500 outline-none w-64 transition-all"
+              />
             </div>
-            <span className="font-medium text-gray-700">{user?.nom || 'Administrateur'}</span>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-black shadow-lg">
+                {user?.nom?.charAt(0) || 'A'}
+              </div>
+            </div>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-8 bg-slate-50">
-
-          {/* ───── DASHBOARD ───── */}
-          {activeTab === 'Dashboard' && (
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100">
-              <h3 className="text-3xl font-extrabold text-slate-800 mb-2">Bienvenue, {user?.nom}</h3>
-              <p className="text-slate-600 text-lg mb-8">
-                Gérez les salles de soutenance, leur disponibilité et leurs informations.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gradient-to-br from-violet-500 to-indigo-600 p-6 rounded-2xl shadow-lg text-white">
-                  <h4 className="text-lg font-bold opacity-90">Total des salles</h4>
-                  <p className="text-4xl font-extrabold mt-2">{salles.length}</p>
-                </div>
-                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-6 rounded-2xl shadow-lg text-white">
-                  <h4 className="text-lg font-bold opacity-90">Salles disponibles</h4>
-                  <p className="text-4xl font-extrabold mt-2">{sallesDisponibles}</p>
-                </div>
-                <div className="bg-gradient-to-br from-rose-500 to-pink-600 p-6 rounded-2xl shadow-lg text-white">
-                  <h4 className="text-lg font-bold opacity-90">Salles occupées</h4>
-                  <p className="text-4xl font-extrabold mt-2">{sallesOccupees}</p>
-                </div>
-              </div>
+        <main className="flex-1 overflow-y-auto p-10">
+          {/* Messages */}
+          {message.text && (
+            <div className={`p-4 rounded-2xl mb-8 flex items-center gap-3 border animate-fade-in ${
+              message.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+            }`}>
+              {message.type === 'success' ? <Check size={18} /> : <X size={18} />}
+              <span className="font-semibold text-sm">{message.text}</span>
             </div>
           )}
 
-          {/* ───── GESTION DES SALLES ───── */}
-          {activeTab === 'Gestion des Salles' && (
-            <div>
-              {/* Message feedback */}
-              {message.text && (
-                <div className={`p-4 rounded-lg mb-6 text-sm font-semibold ${
-                  message.type === 'success'
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  {message.text}
+          {activeTab === 'Dashboard' && (
+            <div className="space-y-10">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-xl group hover:border-violet-500/30 transition-all">
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="p-4 bg-violet-500/10 text-violet-400 rounded-2xl"><LayoutDashboard size={28}/></div>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total Salles</span>
+                  </div>
+                  <p className="text-5xl font-black text-white">{salles.length}</p>
+                  <p className="text-slate-500 text-xs mt-4">Infrastructures enregistrées</p>
                 </div>
-              )}
+                
+                <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-xl group hover:border-emerald-500/30 transition-all">
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="p-4 bg-emerald-500/10 text-emerald-400 rounded-2xl"><Check size={28}/></div>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Disponibles</span>
+                  </div>
+                  <p className="text-5xl font-black text-white">{sallesDisponibles}</p>
+                  <p className="text-emerald-500/60 text-xs mt-4 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" /> Prêt pour usage
+                  </p>
+                </div>
 
-              {/* Header + bouton Ajouter */}
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-slate-800">Liste des salles</h3>
+                <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-xl group hover:border-rose-500/30 transition-all">
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="p-4 bg-rose-500/10 text-rose-400 rounded-2xl"><X size={28}/></div>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Occupées</span>
+                  </div>
+                  <p className="text-5xl font-black text-white">{sallesOccupees}</p>
+                  <p className="text-rose-500/60 text-xs mt-4 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-rose-500 rounded-full" /> En cours d'utilisation
+                  </p>
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {activeTab === 'Gestion des Salles' && (
+            <div className="space-y-8">
+              <div className="flex justify-between items-end">
+                <div>
+                  <h3 className="text-3xl font-black text-white mb-2">Gestion des Salles</h3>
+                  <p className="text-slate-500">Configurez les espaces de soutenance disponibles</p>
+                </div>
                 <button
                   onClick={openAddForm}
-                  className="flex items-center gap-2 bg-gradient-to-r from-violet-500 to-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold shadow hover:opacity-90 transition"
+                  className="flex items-center gap-3 bg-violet-600 hover:bg-violet-500 text-white px-8 py-4 rounded-2xl font-bold shadow-xl shadow-violet-600/20 transition-all active:scale-95"
                 >
-                  <Plus size={18} /> Ajouter une salle
+                  <Plus size={20} /> Ajouter une salle
                 </button>
               </div>
 
-              {/* Formulaire Ajout / Édition */}
               {showForm && (
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 mb-6 max-w-2xl">
-                  <div className="flex justify-between items-center mb-6">
-                    <h4 className="text-xl font-bold text-slate-800">
-                      {editingSalle ? 'Modifier la salle' : 'Nouvelle salle'}
-                    </h4>
-                    <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
+                <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-10 animate-fade-in shadow-2xl">
+                  <div className="flex justify-between items-center mb-8">
+                    <h4 className="text-xl font-bold text-white">{editingId ? 'Modifier la salle' : 'Nouvelle Salle'}</h4>
+                    <button onClick={() => setShowForm(false)} className="p-2 bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors">
                       <X size={20} />
                     </button>
                   </div>
-                  <form onSubmit={handleSubmit} className="space-y-5">
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Nom de la salle</label>
+                  <form onSubmit={handleSalleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Nom de la salle</label>
                       <input
                         type="text"
                         required
-                        placeholder="Ex : Salle B204"
-                        value={salleForm.nom}
-                        onChange={e => setSalleForm({ ...salleForm, nom: e.target.value })}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-violet-100 focus:border-violet-500 outline-none transition"
+                        placeholder="Ex: Salle A102"
+                        value={formData.nom}
+                        onChange={e => setFormData({ ...formData, nom: e.target.value })}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-violet-500 outline-none transition-all"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Capacité (personnes)</label>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Capacité</label>
                       <input
                         type="number"
                         required
-                        min="1"
-                        placeholder="Ex : 30"
-                        value={salleForm.capacite}
-                        onChange={e => setSalleForm({ ...salleForm, capacite: e.target.value })}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-violet-100 focus:border-violet-500 outline-none transition"
+                        placeholder="Ex: 30"
+                        value={formData.capacite}
+                        onChange={e => setFormData({ ...formData, capacite: e.target.value })}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-violet-500 outline-none transition-all"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Localisation</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ex : Bâtiment B, 2ème étage"
-                        value={salleForm.localisation}
-                        onChange={e => setSalleForm({ ...salleForm, localisation: e.target.value })}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-violet-100 focus:border-violet-500 outline-none transition"
-                      />
+                    <div className="flex items-end">
+                       <label className="flex items-center gap-4 bg-slate-800/50 border border-slate-700 px-6 py-4 rounded-2xl cursor-pointer hover:bg-slate-800 transition-all w-full">
+                         <input
+                           type="checkbox"
+                           checked={formData.disponible}
+                           onChange={e => setFormData({ ...formData, disponible: e.target.checked })}
+                           className="w-5 h-5 rounded-md accent-violet-500"
+                         />
+                         <span className="font-bold text-slate-300">Disponible immédiatement</span>
+                       </label>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        id="disponible"
-                        checked={salleForm.disponible}
-                        onChange={e => setSalleForm({ ...salleForm, disponible: e.target.checked })}
-                        className="w-5 h-5 accent-violet-500 cursor-pointer"
-                      />
-                      <label htmlFor="disponible" className="text-sm font-semibold text-slate-700 cursor-pointer">
-                        Salle disponible
-                      </label>
-                    </div>
-                    <div className="pt-4 border-t border-slate-100 flex gap-3">
-                      <button
-                        type="submit"
-                        className="flex items-center gap-2 bg-gradient-to-r from-violet-500 to-indigo-600 text-white px-6 py-3 rounded-xl font-bold shadow hover:opacity-90 transition"
-                      >
-                        <Check size={18} /> {editingSalle ? 'Enregistrer les modifications' : 'Ajouter la salle'}
+                    <div className="md:col-span-3 pt-6 border-t border-slate-800 flex gap-4">
+                      <button type="submit" className="bg-violet-600 hover:bg-violet-500 text-white px-10 py-4 rounded-2xl font-bold shadow-lg transition-all">
+                        {editingId ? 'Mettre à jour' : 'Enregistrer'}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowForm(false)}
-                        className="px-6 py-3 rounded-xl font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
-                      >
+                      <button type="button" onClick={() => setShowForm(false)} className="bg-slate-800 text-slate-300 px-10 py-4 rounded-2xl font-bold hover:bg-slate-700 transition-all">
                         Annuler
                       </button>
                     </div>
@@ -276,91 +332,95 @@ const DashboardAdmin = () => {
                 </div>
               )}
 
-              {/* Tableau des salles */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50 text-slate-600 uppercase text-xs tracking-wider border-b">
-                        <th className="px-8 py-4">ID</th>
-                        <th className="px-8 py-4">Nom</th>
-                        <th className="px-8 py-4">Capacité</th>
-                        <th className="px-8 py-4">Localisation</th>
-                        <th className="px-8 py-4">Statut</th>
-                        <th className="px-8 py-4">Actions</th>
+              <div className="bg-slate-900 border border-slate-800 rounded-[3rem] overflow-hidden shadow-2xl">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-800/50 text-slate-500 uppercase text-[10px] font-bold tracking-[0.2em] border-b border-slate-800">
+                      <th className="px-10 py-6">Identifiant</th>
+                      <th className="px-10 py-6">Désignation</th>
+                      <th className="px-10 py-6 text-center">Capacité</th>
+                      <th className="px-10 py-6">Statut</th>
+                      <th className="px-10 py-6 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {salles.map(salle => (
+                      <tr key={salle.id} className="hover:bg-slate-800/30 transition-colors group">
+                        <td className="px-10 py-6 font-mono text-xs text-slate-500">#{salle.id}</td>
+                        <td className="px-10 py-6 font-bold text-white text-lg">{salle.nom}</td>
+                        <td className="px-10 py-6 text-center font-bold text-slate-300">{salle.capacite} pl.</td>
+                        <td className="px-10 py-6">
+                          <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold border ${
+                            salle.disponible 
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                            : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${salle.disponible ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                            {salle.disponible ? 'DISPONIBLE' : 'OCCUPÉE'}
+                          </span>
+                        </td>
+                        <td className="px-10 py-6 text-right">
+                          <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => openEditForm(salle)} className="p-2 bg-slate-800 text-violet-400 hover:bg-violet-600 hover:text-white rounded-lg transition-all shadow-lg">
+                              <Pencil size={16} />
+                            </button>
+                            <button onClick={() => deleteSalle(salle.id)} className="p-2 bg-slate-800 text-rose-400 hover:bg-rose-600 hover:text-white rounded-lg transition-all shadow-lg">
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {salles.map((salle) => (
-                        <tr key={salle.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="px-8 py-4 font-mono text-slate-500">#{salle.id}</td>
-                          <td className="px-8 py-4 font-semibold text-slate-800">{salle.nom}</td>
-                          <td className="px-8 py-4 text-slate-600">{salle.capacite} pers.</td>
-                          <td className="px-8 py-4 text-slate-600">{salle.localisation}</td>
-                          <td className="px-8 py-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                              salle.disponible
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : 'bg-rose-100 text-rose-700'
-                            }`}>
-                              {salle.disponible ? 'Disponible' : 'Occupée'}
-                            </span>
-                          </td>
-                          <td className="px-8 py-4">
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => openEditForm(salle)}
-                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-violet-50 text-violet-700 rounded-lg hover:bg-violet-100 transition"
-                              >
-                                <Pencil size={13} /> Modifier
-                              </button>
-                              <button
-                                onClick={() => handleDelete(salle.id)}
-                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition"
-                              >
-                                <Trash2 size={13} /> Supprimer
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {salles.length === 0 && (
-                        <tr>
-                          <td colSpan="6" className="px-8 py-10 text-center text-slate-400">
-                            Aucune salle enregistrée. Cliquez sur "Ajouter une salle" pour commencer.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                    ))}
+                    {salles.length === 0 && (
+                      <tr>
+                        <td colSpan="5" className="px-10 py-20 text-center text-slate-600 italic">
+                          Aucune salle configurée. Cliquez sur "Ajouter une salle" pour commencer.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
 
-          {/* ───── PROFIL ───── */}
+          {activeTab.startsWith('Jury-') && (
+            <div className="animate-fade-in">
+              <GestionJury activeTab={activeTab} />
+            </div>
+          )}
+
           {activeTab === 'Profil' && (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 max-w-2xl">
-              <h3 className="text-2xl font-bold mb-6 text-slate-800 border-b pb-4">Vos informations</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center py-2 border-b border-slate-50">
-                  <span className="font-medium text-slate-500">Nom complet</span>
-                  <span className="font-semibold text-slate-800">{user?.nom}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-slate-50">
-                  <span className="font-medium text-slate-500">Email</span>
-                  <span className="font-semibold text-slate-800">{user?.email}</span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="font-medium text-slate-500">Rôle d'accès</span>
-                  <span className="bg-violet-100 text-violet-800 px-3 py-1 rounded-full text-sm font-bold shadow-sm">
-                    {user?.role}
-                  </span>
-                </div>
-              </div>
+            <div className="bg-slate-900 border border-slate-800 rounded-[3rem] shadow-2xl p-12 max-w-3xl">
+               <div className="flex items-center gap-8 mb-12">
+                 <div className="w-24 h-24 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-[2.5rem] flex items-center justify-center text-white font-black text-3xl shadow-xl shadow-violet-500/20">
+                   {user?.nom?.charAt(0) || 'A'}
+                 </div>
+                 <div>
+                   <h3 className="text-3xl font-black text-white">{user?.nom}</h3>
+                   <p className="text-violet-400 font-bold uppercase text-xs tracking-widest mt-1">Administrator Access</p>
+                 </div>
+               </div>
+               
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-slate-800 pt-10">
+                 <div className="space-y-1">
+                   <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Email Address</p>
+                   <p className="text-lg font-bold text-white">{user?.email}</p>
+                 </div>
+                 <div className="space-y-1">
+                   <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">System Role</p>
+                   <div className="flex items-center gap-2">
+                     <span className="w-2 h-2 bg-emerald-500 rounded-full" />
+                     <p className="text-lg font-bold text-white">Full Administrator</p>
+                   </div>
+                 </div>
+               </div>
+               
+               <button className="mt-12 w-full bg-slate-800 hover:bg-slate-700 text-white py-4 rounded-2xl font-bold transition-all border border-slate-700">
+                 Modifier le profil
+               </button>
             </div>
           )}
-
         </main>
       </div>
     </div>
