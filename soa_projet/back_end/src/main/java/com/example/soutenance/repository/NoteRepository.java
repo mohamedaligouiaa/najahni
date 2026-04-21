@@ -8,7 +8,6 @@ import java.util.List;
 public interface NoteRepository extends JpaRepository<Note, Long> {
     List<Note> findBySoutenanceId(Long soutenanceId);
    
-    Note findBySoutenanceIdAndJuryId(Long soutenanceId, Long juryId);
-    
+    Note findBySoutenanceIdAndMembreId(Long soutenanceId, Long membreId);
     
 }

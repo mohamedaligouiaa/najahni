@@ -19,14 +19,9 @@ public class Soutenance {
     @JoinColumn(name = "etudiant_id")
     private User etudiant;
 
-    
-    @ManyToMany
-    @JoinTable(
-        name = "jury", 
-        joinColumns = @JoinColumn(name = "soutenance_id"),
-        inverseJoinColumns = @JoinColumn(name = "membre_id")
-    )
-    private List<User> encadrants;
+    @ManyToOne
+    @JoinColumn(name = "jury_id")
+    private Jury jury;
 
     public Soutenance() {}
 
@@ -42,6 +37,6 @@ public class Soutenance {
     public User getEtudiant() { return etudiant; }
     public void setEtudiant(User etudiant) { this.etudiant = etudiant; }
 
-    public List<User> getEncadrants() { return encadrants; }
-    public void setEncadrants(List<User> encadrants) { this.encadrants = encadrants; }
+    public Jury getJury() { return jury; }
+    public void setJury(Jury jury) { this.jury = jury; }
 }

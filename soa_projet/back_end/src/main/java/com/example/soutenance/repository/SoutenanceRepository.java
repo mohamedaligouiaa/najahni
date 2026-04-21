@@ -12,10 +12,11 @@ import java.util.List;
 public interface SoutenanceRepository extends JpaRepository<Soutenance, Long> {
     List<Soutenance> findByEtudiantId(Long etudiantId);
     @Query("SELECT s FROM Soutenance s " +
-    	       "JOIN Jury j ON j.soutenance.id = s.id " +
-    	       "WHERE j.membre.id = :userId " +
+    	       "JOIN s.jury j " +
+    	       "JOIN j.members m " +
+    	       "WHERE m.user.id = :userId " +
     	       "AND s.date > :now " +
-    	       "AND s.id NOT IN (SELECT n.soutenance.id FROM Note n WHERE n.jury.membre.id = :userId  )")
+    	       "AND s.id NOT IN (SELECT n.soutenance.id FROM Note n WHERE n.membre.id = :userId)")
     	List<Soutenance> findAvailableByJury(
     	        @Param("userId") Long userId,
     	        @Param("now") LocalDateTime now);

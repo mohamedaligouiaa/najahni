@@ -14,8 +14,8 @@ public class Note {
     private Soutenance soutenance;
 
     @ManyToOne
-    @JoinColumn(name = "jury_id")
-    private Jury jury;
+    @JoinColumn(name = "membre_id")
+    private User membre;
 
     private Double note;
     private String commentaire;
@@ -28,8 +28,8 @@ public class Note {
     public Soutenance getSoutenance() { return soutenance; }
     public void setSoutenance(Soutenance soutenance) { this.soutenance = soutenance; }
     
-    public Jury getJury() { return jury; }
-    public void setJury(Jury jury) { this.jury = jury; }
+    public User getMembre() { return membre; }
+    public void setMembre(User membre) { this.membre = membre; }
     
     public Double getNote() { return note; }
     public void setNote(Double note) { this.note = note; }

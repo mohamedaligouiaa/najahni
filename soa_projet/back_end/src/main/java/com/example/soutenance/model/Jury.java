@@ -1,11 +1,8 @@
 package com.example.soutenance.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 public class Jury {
@@ -14,38 +11,34 @@ public class Jury {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    
-    @ManyToOne
-    @JoinColumn(name = "soutenance_id")
-    private Soutenance soutenance;
-    
-    @ManyToOne
-    @JoinColumn(name = "membre_id")
-    private User membre;
+    private String nom;
 
-	public Long getId() {
-		return id;
-	}
+    @OneToMany(mappedBy = "jury", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<JuryMember> members = new ArrayList<>();
 
-	public void setId(Long id) {
-		this.id = id;
-	}
+    public Jury() {}
 
-	public Soutenance getSoutenance() {
-		return soutenance;
-	}
+    public Long getId() {
+        return id;
+    }
 
-	public void setSoutenance(Soutenance soutenance) {
-		this.soutenance = soutenance;
-	}
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-	public User getMembre() {
-		return membre;
-	}
+    public String getNom() {
+        return nom;
+    }
 
-	public void setMembre(User membre) {
-		this.membre = membre;
-	}
+    public void setNom(String nom) {
+        this.nom = nom;
+    }
 
-    
+    public List<JuryMember> getMembers() {
+        return members;
+    }
+
+    public void setMembers(List<JuryMember> members) {
+        this.members = members;
+    }
 }
