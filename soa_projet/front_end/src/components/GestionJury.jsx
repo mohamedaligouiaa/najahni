@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Check, Pencil, Trash2, Users, GraduationCap, Award, BookOpen } from 'lucide-react';
+import { Plus, X, Check, Pencil, Trash2, Users, GraduationCap, Award, BookOpen, Settings } from 'lucide-react';
 import api from '../api/axios';
 
 const GestionJury = ({ activeTab }) => {
@@ -88,9 +88,9 @@ const GestionJury = ({ activeTab }) => {
 
     setJuryForm({
        nom: jury.nom,
-       presidentId: president ? president.user.id.toString() : '',
-       rapporteurId: rapporteur ? rapporteur.user.id.toString() : '',
-       EncadrantId: encadrant ? encadrant.user.id.toString() : ''
+       presidentId: president?.user?.id?.toString() || '',
+       rapporteurId: rapporteur?.user?.id?.toString() || '',
+       EncadrantId: encadrant?.user?.id?.toString() || ''
     });
     setEditingJuryId(jury.id);
     setShowEditPopup(true);
