@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, DoorOpen, LogOut, User, Plus, Pencil, Trash2, X, Check, Users, ChevronDown, ChevronRight, GraduationCap, Settings, BookOpen, Search, Filter } from 'lucide-react';
+import { LayoutDashboard, DoorOpen, LogOut, User, Plus, Pencil, Trash2, X, Check, Users, ChevronDown, ChevronRight, GraduationCap, Settings, BookOpen, Search, Filter, Calendar } from 'lucide-react';
 import api from '../api/axios';
 import GestionJury from '../components/GestionJury';
+import GestionCreneaux from '../components/GestionCreneaux';
 
 const DashboardAdmin = () => {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ const DashboardAdmin = () => {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ nom: '', capacite: '', disponible: true });
   const [editingId, setEditingId] = useState(null);
+  const [globalSearch, setGlobalSearch] = useState(''); // Nouvelle recherche globale
 
   useEffect(() => {
     fetchUser();
@@ -93,6 +95,14 @@ const DashboardAdmin = () => {
   const sidebarItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} /> },
     { name: 'Gestion des Salles', icon: <DoorOpen size={20} /> },
+    { 
+      name: 'Gestion des Créneaux', 
+      icon: <Calendar size={20} />,
+      subItems: [
+        { name: 'Ajouter Créneaux', tab: 'Creneau-Ajouter', icon: <Plus size={16} /> },
+        { name: 'Gérer Créneaux', tab: 'Creneau-Gerer', icon: <Settings size={16} /> }
+      ]
+    },
     { 
       name: 'Gestion des Jury', 
       icon: <Users size={20} />,
@@ -202,7 +212,9 @@ const DashboardAdmin = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
               <input 
                 type="text" 
-                placeholder="Rechercher..." 
+                placeholder="Rechercher par date ou statut..." 
+                value={globalSearch}
+                onChange={(e) => setGlobalSearch(e.target.value)}
                 className="bg-slate-800 border border-slate-700 rounded-full pl-10 pr-4 py-2 text-xs focus:ring-2 focus:ring-violet-500 outline-none w-64 transition-all"
               />
             </div>
@@ -387,6 +399,16 @@ const DashboardAdmin = () => {
           {activeTab.startsWith('Jury-') && (
             <div className="animate-fade-in">
               <GestionJury activeTab={activeTab} />
+            </div>
+          )}
+
+          {activeTab === 'Gestion des Créneaux' || activeTab.startsWith('Creneau-') && (
+            <div className="animate-fade-in">
+              <GestionCreneaux 
+                activeTab={activeTab} 
+                globalSearch={globalSearch} 
+                setGlobalSearch={setGlobalSearch} 
+              />
             </div>
           )}
 

@@ -23,20 +23,51 @@ public class Soutenance {
     @JoinColumn(name = "jury_id")
     private Jury jury;
 
-    public Soutenance() {}
+    public Soutenance() {
+    }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public LocalDateTime getDate() { return date; }
-    public void setDate(LocalDateTime date) { this.date = date; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getSalle() { return salle; }
-    public void setSalle(String salle) { this.salle = salle; }
+    public LocalDateTime getDate() {
+        return date;
+    }
 
-    public User getEtudiant() { return etudiant; }
-    public void setEtudiant(User etudiant) { this.etudiant = etudiant; }
+    public void setDate(LocalDateTime date) {
+        this.date = date;
+    }
 
-    public Jury getJury() { return jury; }
-    public void setJury(Jury jury) { this.jury = jury; }
+    public String getSalle() {
+        return salle;
+    }
+
+    public void setSalle(String salle) {
+        this.salle = salle;
+    }
+
+    public User getEtudiant() {
+        return etudiant;
+    }
+
+    public void setEtudiant(User etudiant) {
+        this.etudiant = etudiant;
+    }
+
+    public Jury getJury() {
+        return jury;
+    }
+
+    public void setJury(Jury jury) {
+        this.jury = jury;
+    }
+
+    @Transient
+    public LocalDateTime getEndTime() {
+        return date != null ? date.plusMinutes(30) : null;
+    }
 }
