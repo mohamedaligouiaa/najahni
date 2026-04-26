@@ -4,15 +4,15 @@ import java.time.LocalDateTime;
 
 public class SoutenanceRequest {
     private Long creneauId;
-    private String salle;
+    private Long salleId;
     private Long etudiantId;
     private Long juryId;
 
     public Long getCreneauId() { return creneauId; }
     public void setCreneauId(Long creneauId) { this.creneauId = creneauId; }
 
-    public String getSalle() { return salle; }
-    public void setSalle(String salle) { this.salle = salle; }
+    public Long getSalleId() { return salleId; }
+    public void setSalleId(Long salleId) { this.salleId = salleId; }
 
     public Long getEtudiantId() { return etudiantId; }
     public void setEtudiantId(Long etudiantId) { this.etudiantId = etudiantId; }

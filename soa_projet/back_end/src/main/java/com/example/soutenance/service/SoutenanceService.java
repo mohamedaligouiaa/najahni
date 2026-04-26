@@ -43,8 +43,8 @@ public class SoutenanceService {
         }
 
         // 2. Salle (si présente)
-        if (soutenance.getSalle() != null && !soutenance.getSalle().isEmpty()) {
-            List<Soutenance> salleConflicts = soutenanceRepository.findOverlappingBySalle(soutenance.getSalle(), start, end);
+        if (soutenance.getSalle() != null) {
+            List<Soutenance> salleConflicts = soutenanceRepository.findOverlappingBySalle(soutenance.getSalle().getId(), start, end);
             if (salleConflicts.stream().anyMatch(s -> id == null || !s.getId().equals(id))) {
                 throw new Exception("La salle est déjà occupée.");
             }
@@ -63,5 +63,11 @@ public class SoutenanceService {
         }
 
         return soutenanceRepository.save(soutenance);
+    }
+
+    public void deleteSoutenance(Long id) throws Exception {
+        soutenanceRepository.findById(id)
+                .orElseThrow(() -> new Exception("Soutenance non trouvée."));
+        soutenanceRepository.deleteById(id);
     }
 }

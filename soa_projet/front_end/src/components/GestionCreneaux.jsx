@@ -1,33 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Check, AlertCircle, Save, Clock, Trash2, Plus, X, Pencil, Search, Filter, Layers, Zap } from 'lucide-react';
 import api from '../api/axios';
+import { 
+  Calendar, Clock, Trash2, Plus, AlertCircle, Check, 
+  Search, Layers, Edit3, X, MapPin, Users,
+  Settings, Pencil
+} from 'lucide-react';
 
-const GestionCreneaux = ({ activeTab, globalSearch, setGlobalSearch }) => {
+const GestionCreneaux = ({ activeTab, globalSearch }) => {
   const [soutenances, setSoutenances] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ text: '', type: '' });
-  
-  // Le searchTerm est maintenant synchronisé avec le Dashboard global
-  const searchTerm = globalSearch || '';
-  const setSearchTerm = setGlobalSearch;
-  const [filterType, setFilterType] = useState('all');
-
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
-  const [dateForm, setDateForm] = useState({ date: '', time: '' });
+  const [dateForm, setDateForm] = useState({ date: '', time: '09:00' });
+  const [localSearch, setLocalSearch] = useState("");
+  const [message, setMessage] = useState({ text: '', type: '' });
 
-  useEffect(() => {
-    fetchData();
+  useEffect(() => { 
+    fetchData(); 
+    setLocalSearch("");
+    setMessage({ text: '', type: '' });
   }, [activeTab]);
-
+  
   const fetchData = async () => {
     try {
       const res = await api.get('/creneaux');
       setSoutenances(res.data);
-    } catch (err) {
-      console.error("Erreur chargement", err);
-    }
+    } catch (err) { console.error("Erreur chargement créneaux", err); }
   };
 
   const showMessage = (text, type = 'success') => {
@@ -35,248 +34,256 @@ const GestionCreneaux = ({ activeTab, globalSearch, setGlobalSearch }) => {
     setTimeout(() => setMessage({ text: '', type: '' }), 4000);
   };
 
-  const total = soutenances.length;
-  const occupees = soutenances.filter(s => s.soutenance).length;
-  const libres = total - occupees;
+  const openAddModal = () => {
+    setIsEditing(false);
+    setCurrentId(null);
+    setDateForm({ date: '', time: '09:00' });
+    setShowModal(true);
+  };
 
-  const filteredSoutenances = soutenances.filter(s => {
-    const dt = new Date(s.date);
-    const dateLabel = dt.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).toLowerCase();
-    const matchesSearch = dateLabel.includes(searchTerm.toLowerCase());
-    const matchesFilter = filterType === 'all' || (filterType === 'occupe' && s.soutenance) || (filterType === 'libre' && !s.soutenance);
-    return matchesSearch && matchesFilter;
-  }).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const openEditModal = (slot) => {
+    setIsEditing(true);
+    setCurrentId(slot.id);
+    const d = new Date(slot.date);
+    setDateForm({
+      date: d.toISOString().split('T')[0],
+      time: d.toTimeString().slice(0, 5)
+    });
+    setShowModal(true);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const [year, month, day] = dateForm.date.split('-').map(Number);
-    const checkDate = new Date(year, month - 1, day);
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-
-    if (checkDate < today) { showMessage("Erreur : La date est déjà passée.", "error"); return; }
-    if (checkDate.getDay() === 0) { showMessage("Erreur : Dimanche interdit.", "error"); return; }
-
-    const [h, m] = dateForm.time.split(':').map(Number);
-    if (h < 9) { showMessage("Erreur : Début min 09:00.", "error"); return; }
-    if (h > 15 || (h === 15 && m > 30)) { showMessage("Erreur : Fin max 16:00.", "error"); return; }
-
-    const newStart = new Date(`${dateForm.date}T${dateForm.time}`);
-    const newEnd = new Date(newStart.getTime() + 30 * 60000);
-    const hasCollision = soutenances.find(s => {
-        if (!s.date || (isEditing && s.id === currentId)) return false;
-        const sStart = new Date(s.date);
-        const sEnd = new Date(sStart.getTime() + 30 * 60000);
-        return newStart < sEnd && sStart < newEnd;
-    });
-
-    if (hasCollision) {
-        let suggestedTime = null;
-        let searchTime = new Date(`${dateForm.date}T09:00`);
-        const maxSearch = new Date(`${dateForm.date}T15:30`);
-        while (searchTime <= maxSearch) {
-            const timeStr = `${searchTime.getHours().toString().padStart(2, '0')}:${searchTime.getMinutes().toString().padStart(2, '0')}`;
-            const cS = new Date(`${dateForm.date}T${timeStr}`);
-            const cE = new Date(cS.getTime() + 30 * 60000);
-            const isColliding = soutenances.find(s => {
-                if (!s.date || (isEditing && s.id === currentId)) return false;
-                const sS = new Date(s.date); const sE = new Date(sS.getTime() + 30 * 60000);
-                return cS < sE && sS < cE;
-            });
-            if (!isColliding) { suggestedTime = timeStr; break; }
-            searchTime.setMinutes(searchTime.getMinutes() + 30);
-        }
-        showMessage(`Déjà pris. Suggestion : ${suggestedTime || 'Aucun'}`, "error"); return;
+    if (!dateForm.date || !dateForm.time) {
+        showMessage('Veuillez remplir tous les champs.', 'error');
+        return;
     }
-
     setLoading(true);
     try {
         const dateTime = `${dateForm.date}T${dateForm.time}:00`;
         const payload = { date: dateTime };
         if (isEditing) {
             await api.put(`/creneaux/${currentId}`, payload);
-            showMessage("Mise à jour réussie !");
+            showMessage('Créneau mis à jour avec succès !');
         } else {
             await api.post('/creneaux', payload);
-            showMessage("Créneau enregistré !");
+            showMessage('Créneau créé avec succès !');
         }
-        setShowModal(false); fetchData();
-    } catch (err) { showMessage("Erreur serveur", "error"); } finally { setLoading(false); }
+        setShowModal(false);
+        fetchData();
+    } catch (err) { 
+        showMessage(err.response?.data || 'Erreur serveur.', 'error'); 
+    } finally { setLoading(false); }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Supprimer ce créneau ?")) return;
-    try { await api.delete(`/soutenances/${id}`); showMessage("Supprimé."); fetchData(); } 
-    catch (err) { showMessage("Erreur", "error"); }
+    if (!window.confirm('Confirmer la suppression de ce créneau ?')) return;
+    try { 
+      await api.delete(`/creneaux/${id}`); 
+      showMessage('Créneau supprimé avec succès !');
+      fetchData(); 
+    } catch { 
+      showMessage('Erreur lors de la suppression.', 'error'); 
+    }
   };
 
-  return (
-    <div className="max-w-7xl mx-auto space-y-12 animate-fade-in pb-20 relative">
-      {/* GLOW DECORATIONS */}
-      <div className="absolute -top-20 -left-20 w-96 h-96 bg-violet-600/10 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute top-1/2 -right-40 w-[500px] h-[500px] bg-emerald-600/5 blur-[150px] rounded-full pointer-events-none" />
+  const filtered = soutenances.filter(s => {
+    const d = new Date(s.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const search = (localSearch || globalSearch || "").toLowerCase();
+    return d.toLowerCase().includes(search) || 
+           new Date(s.date).toLocaleTimeString('fr-FR').includes(search);
+  });
 
+  const total = soutenances.length;
+  const occupes = soutenances.filter(s => s.soutenance).length;
+  const libres = total - occupes;
+
+  return (
+    <div className="space-y-8 animate-fade-in pb-20">
+      
+      {/* TOAST (Style Salles) */}
       {message.text && (
-        <div className={`fixed top-12 right-12 z-[500] p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 text-white font-black animate-bounce-in backdrop-blur-xl border border-white/10 ${
-          message.type === 'success' ? 'bg-emerald-600/90' : 'bg-rose-600/90'
+        <div className={`fixed top-8 right-8 z-[500] flex items-center gap-4 px-8 py-5
+          rounded-2xl shadow-2xl text-white font-bold border border-white/10 backdrop-blur-xl ${
+          message.type === 'success' ? 'bg-emerald-600/95' : 'bg-rose-600/95'
         }`}>
-          {message.type === 'success' ? <Check size={24} strokeWidth={3} /> : <AlertCircle size={24} strokeWidth={3} />}
-          <span className="tracking-tight">{message.text}</span>
+          {message.type === 'success' ? <Check size={20} /> : <AlertCircle size={20} />}
+          {message.text}
         </div>
       )}
 
-      {/* --- DASHBOARD STATS --- */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {[
-            { label: 'CALENDRIER GLOBAL', value: total, icon: Layers, color: 'violet' },
-            { label: 'PLACES DISPONIBLES', value: libres, icon: Zap, color: 'emerald' },
-            { label: 'SOUTENANCES FIXÉES', value: occupees, icon: Clock, color: 'rose' }
-          ].map((kpi, idx) => (
-            <div key={idx} className="group relative bg-slate-900/50 backdrop-blur-md border border-white/5 p-10 rounded-[2.5rem] shadow-2xl transition-all hover:border-white/20 hover:-translate-y-2">
-                <div className={`absolute top-0 right-0 p-8 text-${kpi.color}-500/20 group-hover:scale-125 transition-all`}>
-                    <kpi.icon size={100} strokeWidth={1} />
-                </div>
-                <div className="relative z-10 flex flex-col h-full">
-                    <span className="text-slate-500 font-black text-[10px] tracking-[.3em] uppercase mb-4">{kpi.label}</span>
-                    <h4 className={`text-6xl font-black italic text-white`}>
-                        {kpi.value}
-                    </h4>
-                </div>
-                <div className={`absolute bottom-0 left-0 w-32 h-1 bg-${kpi.color}-500 rounded-full translate-y-1 opacity-0 group-hover:opacity-100 transition-all`} />
+      {/* STATS (Structure Salles) */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: 'Total Créneaux', value: total, color: 'border-slate-700 text-slate-300', dot: 'bg-slate-500' },
+          { label: 'Réservés', value: occupes, color: 'border-rose-500/30 text-rose-400', dot: 'bg-rose-500' },
+          { label: 'Disponibles', value: libres, color: 'border-emerald-500/30 text-emerald-400', dot: 'bg-emerald-500' },
+        ].map((s, i) => (
+          <div key={i} className={`flex items-center justify-between bg-slate-900 border ${s.color} rounded-2xl px-8 py-5`}>
+            <div className="flex items-center gap-3">
+              <span className={`w-2.5 h-2.5 rounded-full ${s.dot}`} />
+              <span className="text-slate-400 font-bold text-sm uppercase tracking-widest">{s.label}</span>
             </div>
-          ))}
+            <span className={`text-4xl font-black ${s.color.split(' ')[1]}`}>{s.value}</span>
+          </div>
+        ))}
       </div>
 
+      {/* PAGE CRÉER (Style Salles) */}
       {activeTab === 'Creneau-Ajouter' && (
-        <div className="relative group bg-slate-900/40 backdrop-blur-lg border border-white/5 rounded-[4rem] p-32 text-center overflow-hidden shadow-2xl">
-             <div className="absolute inset-0 bg-gradient-to-br from-violet-600/10 via-transparent to-emerald-600/10 opacity-30" />
-             <div className="relative z-10 space-y-10">
-                <div className="w-32 h-32 bg-slate-800 text-violet-400 rounded-[2.5rem] flex items-center justify-center mx-auto border border-white/10 shadow-2xl group-hover:rotate-12 transition-all duration-500">
-                    <Plus size={64} strokeWidth={1.5} />
-                </div>
-                <div>
-                    <h2 className="text-5xl font-black text-white italic tracking-tighter uppercase mb-4">Planifier un temps</h2>
-                    <p className="text-slate-500 max-w-sm mx-auto font-medium">Initialisez une nouvelle plage horaire pour vos sessions de soutenances.</p>
-                </div>
-                <button
-                    onClick={() => { setIsEditing(false); setDateForm({date:'', time:''}); setShowModal(true); }}
-                    className="group relative px-16 py-7 bg-white text-black font-black rounded-3xl transition-all shadow-2xl hover:scale-105 active:scale-95 uppercase tracking-widest text-sm overflow-hidden"
-                >
-                    <span className="relative z-10">Ouvrir le formulaire</span>
-                    <div className="absolute inset-0 bg-violet-400 translate-y-full group-hover:translate-y-0 transition-all" />
-                </button>
-             </div>
-        </div>
-      )}
-
-      {activeTab === 'Creneau-Gerer' && (
-        <div className="space-y-8">
-          <div className="flex flex-col lg:flex-row gap-6 items-center">
-              <div className="flex-1 relative w-full">
-                  <Search size={22} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500" />
-                  <input 
-                    type="text" placeholder="Recherche dynamique (date, jour, mois)..."
-                    className="w-full bg-slate-900/50 backdrop-blur-md border border-white/5 rounded-[2rem] py-6 pl-16 pr-8 text-white font-bold outline-none focus:border-violet-500/50 transition-all shadow-inner"
-                    value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                  />
-              </div>
-              <div className="flex gap-3 bg-slate-900/80 p-2 rounded-[1.8rem] border border-white/5 shadow-2xl">
-                  {['all', 'libre', 'occupe'].map(t => (
-                    <button 
-                        key={t}
-                        onClick={() => setFilterType(t)} 
-                        className={`px-8 py-3 rounded-2xl text-[10px] font-black tracking-widest transition-all ${
-                            filterType === t ? 'bg-white text-black shadow-xl' : 'text-slate-500 hover:text-white'
-                        } uppercase`}
-                    >
-                        {t === 'all' ? 'TOUS' : t === 'libre' ? 'LIBRES' : 'OCCUPÉS'}
-                    </button>
-                  ))}
-              </div>
-          </div>
-
-          <div className="bg-slate-900/50 backdrop-blur-md border border-white/5 rounded-[3.5rem] overflow-hidden shadow-2xl">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-white/5 text-slate-500 uppercase text-[10px] font-black tracking-[0.3em] border-b border-white/5">
-                  <th className="px-12 py-8">Statut</th>
-                  <th className="px-12 py-8 text-white/50">Details de la séance</th>
-                  <th className="px-12 py-8 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {filteredSoutenances.map(s => {
-                    const dt = new Date(s.date);
-                    return (
-                        <tr key={s.id} className="group hover:bg-white/[0.02] transition-all">
-                            <td className="px-12 py-10">
-                                <div className={`inline-flex items-center gap-3 px-5 py-2 rounded-full border ${
-                                    s.soutenance ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                                }`}>
-                                    <div className={`w-2 h-2 rounded-full ${s.soutenance ? 'bg-rose-500 shadow-lg shadow-rose-500/50 animate-pulse' : 'bg-emerald-500'}`} />
-                                    <span className="text-[10px] font-black tracking-tighter uppercase">{s.soutenance ? 'Réservé' : 'Disponible'}</span>
-                                </div>
-                            </td>
-                            <td className="px-12 py-10">
-                                <div className="space-y-1">
-                                    <p className="text-xl font-black text-white italic tracking-tight capitalize">
-                                        {dt.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
-                                    </p>
-                                    <div className="flex items-center gap-4 text-slate-500 font-bold text-sm">
-                                        <span className="flex items-center gap-2 bg-slate-800/80 px-3 py-1 rounded-lg">
-                                            <Clock size={14} className="text-violet-400" />
-                                            {dt.toTimeString().substring(0, 5)}
-                                        </span>
-                                        <span className="text-xs uppercase tracking-widest">{dt.getFullYear()}</span>
-                                    </div>
-                                </div>
-                            </td>
-                            <td className="px-12 py-10 text-right">
-                                <div className="flex justify-end gap-4 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
-                                    <button onClick={() => { setIsEditing(true); setCurrentId(s.id); setDateForm({date: s.date.split('T')[0], time: s.date.split('T')[1].substring(0,5)}); setShowModal(true); }} className="p-4 bg-white/5 hover:bg-emerald-600 text-emerald-400 hover:text-white rounded-2xl transition-all shadow-xl">
-                                        <Pencil size={18} strokeWidth={2.5} />
-                                    </button>
-                                    <button onClick={() => handleDelete(s.id)} className="p-4 bg-white/5 hover:bg-rose-600 text-rose-400 hover:text-white rounded-2xl transition-all shadow-xl">
-                                        <Trash2 size={18} strokeWidth={2.5} />
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DESIGNER */}
-      {showModal && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-8 bg-slate-950/95 backdrop-blur-2xl animate-fade-in">
-            <div className="bg-slate-900 border border-white/10 w-full max-w-lg rounded-[4rem] p-16 shadow-[0_0_100px_rgba(139,92,246,0.15)] relative scale-100 animate-bounce-in overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-violet-600/10 blur-[80px] -mr-32 -mt-32" />
-                <button onClick={() => setShowModal(false)} className="absolute top-10 right-10 text-slate-500 hover:text-white bg-white/5 hover:bg-white/10 p-3 rounded-2xl transition-all"><X size={28} /></button>
-                
-                <div className="relative z-10 mb-12 text-center space-y-2">
-                    <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">{isEditing ? "Réglages Créneau" : "Nouveau Créneau"}</h3>
-                    <p className="text-slate-500 font-medium">Administration du temps de soutenance</p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="relative z-10 space-y-10">
-                    <div className="space-y-8">
-                        <div className="group space-y-3">
-                            <label className="text-[10px] font-black text-slate-600 group-hover:text-violet-400 uppercase tracking-[0.3em] ml-2 transition-all">Calendrier</label>
-                            <input type="date" required className="w-full bg-slate-800/80 border-2 border-white/5 rounded-3xl p-6 text-white text-xl focus:border-violet-500/50 hover:border-white/20 outline-none transition-all" value={dateForm.date} onChange={e => setDateForm({...dateForm, date: e.target.value})} />
-                        </div>
-                        <div className="group space-y-3">
-                            <label className="text-[10px] font-black text-slate-600 group-hover:text-violet-400 uppercase tracking-[0.3em] ml-2 transition-all">Heure Exacte</label>
-                            <input type="time" required className="w-full bg-slate-800/80 border-2 border-white/5 rounded-3xl p-6 text-white text-xl focus:border-violet-500/50 hover:border-white/20 outline-none transition-all" value={dateForm.time} onChange={e => setDateForm({...dateForm, time: e.target.value})} />
-                        </div>
-                    </div>
-                    <button type="submit" disabled={loading} className="w-full bg-white text-black font-black py-7 rounded-3xl shadow-2xl hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-[0.2em] italic text-sm">
-                        {loading ? 'Traitement...' : 'Enregistrer les modifications'}
-                    </button>
-                </form>
+        <div
+          className="mt-6 border-2 border-dashed border-slate-700 hover:border-violet-500/50
+            rounded-[3rem] p-24 text-center transition-all group cursor-pointer"
+          onClick={openAddModal}
+        >
+          <div className="space-y-6">
+            <div className="w-20 h-20 bg-slate-800 border border-slate-700
+              group-hover:border-violet-500/50 rounded-3xl flex items-center
+              justify-center mx-auto transition-all">
+              <Calendar size={40} className="text-slate-600 group-hover:text-violet-400 transition-all" />
             </div>
+            <div>
+              <h2 className="text-2xl font-black text-white mb-2">Ajouter un nouveau créneau</h2>
+              <p className="text-slate-500 text-sm">Cliquez pour ouvrir le formulaire de planification</p>
+            </div>
+            <div className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500
+              text-white px-8 py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-violet-600/20">
+              <Plus size={18} /> Nouveau créneau
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PAGE GÉRER (Style Salles) */}
+      {activeTab === 'Creneau-Gerer' && (
+        <div className="space-y-6">
+          <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
+            <div className="flex-1 relative">
+              <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                type="text"
+                placeholder="Rechercher par date ou heure..."
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl py-4
+                  pl-12 pr-5 text-white text-sm font-medium outline-none focus:border-violet-500 transition-all"
+                value={localSearch}
+                onChange={e => setLocalSearch(e.target.value)}
+              />
+            </div>
+            <button
+              onClick={openAddModal}
+              className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500
+                text-white px-6 py-4 rounded-xl font-bold text-sm shadow-lg
+                shadow-violet-600/20 transition-all active:scale-95 whitespace-nowrap"
+            >
+              <Plus size={18} /> Ajouter un créneau
+            </button>
+          </div>
+
+          {filtered.length === 0 ? (
+            <div className="text-center py-24 text-slate-600 italic border border-dashed border-slate-800 rounded-3xl">
+              Aucun créneau trouvé.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {filtered.map(slot => (
+                <div key={slot.id} className="group bg-slate-900 border border-slate-800
+                  hover:border-slate-600 rounded-3xl p-7 flex flex-col gap-5
+                  transition-all hover:shadow-xl hover:-translate-y-1">
+                  
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-violet-500/10 border border-violet-500/20 rounded-2xl flex items-center justify-center">
+                        <Clock size={22} className="text-violet-400" />
+                      </div>
+                      <div>
+                        <p className="font-black text-white text-lg leading-tight">
+                          {new Date(slot.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                        <p className="text-slate-600 font-mono text-xs">#{slot.id}</p>
+                      </div>
+                    </div>
+                    <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black border ${
+                      slot.soutenance 
+                        ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' 
+                        : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${slot.soutenance ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'}`} />
+                      {slot.soutenance ? 'Occupé' : 'Libre'}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-2.5 text-sm">
+                    <div className="flex items-center gap-2 text-slate-400">
+                      <Calendar size={14} className="text-violet-400 shrink-0" />
+                      <span>{new Date(slot.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-4 border-t border-slate-800">
+                    <button
+                      onClick={() => openEditModal(slot)}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5
+                        bg-slate-800 hover:bg-emerald-600 text-slate-400 hover:text-white
+                        rounded-xl text-xs font-bold transition-all"
+                    >
+                      <Pencil size={14} /> Modifier
+                    </button>
+                    <button
+                      onClick={() => handleDelete(slot.id)}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5
+                        bg-slate-800 hover:bg-rose-600 text-slate-400 hover:text-white
+                        rounded-xl text-xs font-bold transition-all"
+                    >
+                      <Trash2 size={14} /> Supprimer
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* MODAL (Style Salles) */}
+      {showModal && (
+        <div className="fixed inset-0 z-[600] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
+          <div className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-8 py-6 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-violet-500/10 text-violet-400 rounded-xl"><Settings size={20} /></div>
+                <div>
+                  <h3 className="text-lg font-black text-white">{isEditing ? 'Modifier créneau' : 'Nouveau créneau'}</h3>
+                  <p className="text-slate-500 text-xs">Planification d'une plage horaire</p>
+                </div>
+              </div>
+              <button onClick={() => setShowModal(false)} className="p-2 text-slate-500 hover:text-white bg-slate-800 rounded-xl"><X size={20} /></button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-8 space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Date</label>
+                <input type="date" required value={dateForm.date} onChange={e => setDateForm({ ...dateForm, date: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-700 focus:border-violet-500 rounded-xl px-5 py-3.5 text-white text-sm outline-none transition-all" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Heure</label>
+                <input type="time" required value={dateForm.time} onChange={e => setDateForm({ ...dateForm, time: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-800 focus:border-violet-500 rounded-xl px-5 py-3.5 text-white text-sm outline-none transition-all" />
+              </div>
+              {message.text && message.type === 'error' && (
+                <div className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-xl flex items-center gap-3 text-rose-400 animate-shake">
+                  <AlertCircle size={18} />
+                  <span className="text-xs font-bold">{message.text}</span>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-3.5 bg-slate-800 text-slate-300 rounded-xl font-bold text-sm">Annuler</button>
+                <button type="submit" disabled={loading} className="flex-1 py-3.5 bg-violet-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-violet-600/20 transition-all">
+                  {loading ? '...' : isEditing ? 'Mettre à jour' : 'Enregistrer'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

@@ -1,5 +1,6 @@
 package com.example.soutenance.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -15,7 +16,10 @@ public class Soutenance {
     @JoinColumn(name = "creneau_id")
     private Creneau creneau;
 
-    private String salle;
+    @ManyToOne
+    @JoinColumn(name = "salle_id")
+    @JsonIgnoreProperties("soutenanceActive")
+    private Salle salle;
 
     @ManyToOne
     @JoinColumn(name = "etudiant_id")
@@ -33,8 +37,8 @@ public class Soutenance {
     public Creneau getCreneau() { return creneau; }
     public void setCreneau(Creneau creneau) { this.creneau = creneau; }
 
-    public String getSalle() { return salle; }
-    public void setSalle(String salle) { this.salle = salle; }
+    public Salle getSalle() { return salle; }
+    public void setSalle(Salle salle) { this.salle = salle; }
 
     public User getEtudiant() { return etudiant; }
     public void setEtudiant(User etudiant) { this.etudiant = etudiant; }

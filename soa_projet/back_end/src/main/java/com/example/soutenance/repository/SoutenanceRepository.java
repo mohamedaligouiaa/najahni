@@ -13,11 +13,11 @@ public interface SoutenanceRepository extends JpaRepository<Soutenance, Long> {
     
     boolean existsByEtudiantId(Long etudiantId);
 
-    @Query("SELECT s FROM Soutenance s WHERE s.salle = :salle AND " +
+    @Query("SELECT s FROM Soutenance s WHERE s.salle.id = :salleId AND " +
            "((s.creneau.date <= :start AND :start < FUNCTION('TIMESTAMPADD', MINUTE, 30, s.creneau.date)) OR " +
            " (s.creneau.date < :end AND :end <= FUNCTION('TIMESTAMPADD', MINUTE, 30, s.creneau.date)) OR " +
            " (:start <= s.creneau.date AND s.creneau.date < :end))")
-    List<Soutenance> findOverlappingBySalle(@Param("salle") String salle, 
+    List<Soutenance> findOverlappingBySalle(@Param("salleId") Long salleId, 
                                            @Param("start") LocalDateTime start, 
                                            @Param("end") LocalDateTime end);
 
@@ -32,8 +32,7 @@ public interface SoutenanceRepository extends JpaRepository<Soutenance, Long> {
     	        @Param("now") LocalDateTime now);
 
     @Query("SELECT s FROM Soutenance s " +
-           "JOIN s.jury j " +
-           "JOIN j.members m " +
+           "JOIN s.jury j JOIN j.members m " +
            "WHERE m.user.id IN :userIds AND " +
            "((s.creneau.date <= :start AND :start < FUNCTION('TIMESTAMPADD', MINUTE, 30, s.creneau.date)) OR " +
            " (s.creneau.date < :end AND :end <= FUNCTION('TIMESTAMPADD', MINUTE, 30, s.creneau.date)) OR " +
@@ -41,4 +40,7 @@ public interface SoutenanceRepository extends JpaRepository<Soutenance, Long> {
     List<Soutenance> findOverlappingByJuryMembers(@Param("userIds") List<Long> userIds, 
                                                  @Param("start") LocalDateTime start, 
                                                  @Param("end") LocalDateTime end);
+
+    @Query("SELECT s FROM Soutenance s WHERE s.salle IS NULL")
+    List<Soutenance> findSanseSalle();
 }
