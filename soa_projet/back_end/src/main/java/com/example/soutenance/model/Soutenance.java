@@ -12,9 +12,11 @@ public class Soutenance {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private LocalDateTime date;
-
     @OneToOne
+    @JoinColumn(name = "creneau_id")
+    private Creneau creneau;
+
+    @ManyToOne
     @JoinColumn(name = "salle_id")
     @JsonIgnoreProperties("soutenanceActive")
     private Salle salle;
@@ -31,17 +33,26 @@ public class Soutenance {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-    public LocalDateTime getDate() { return date; }
-    public void setDate(LocalDateTime date) { this.date = date; }
+
+    public Creneau getCreneau() { return creneau; }
+    public void setCreneau(Creneau creneau) { this.creneau = creneau; }
+
     public Salle getSalle() { return salle; }
     public void setSalle(Salle salle) { this.salle = salle; }
+
     public User getEtudiant() { return etudiant; }
     public void setEtudiant(User etudiant) { this.etudiant = etudiant; }
+
     public Jury getJury() { return jury; }
     public void setJury(Jury jury) { this.jury = jury; }
 
     @Transient
+    public LocalDateTime getDate() {
+        return creneau != null ? creneau.getDate() : null;
+    }
+
+    @Transient
     public LocalDateTime getEndTime() {
-        return date != null ? date.plusMinutes(30) : null;
+        return (creneau != null && creneau.getDate() != null) ? creneau.getDate().plusMinutes(30) : null;
     }
 }

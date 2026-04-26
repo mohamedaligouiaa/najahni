@@ -3,15 +3,13 @@ package com.example.soutenance.dto;
 import java.time.LocalDateTime;
 
 public class SoutenanceRequest {
-    private LocalDateTime date;
-    private Long salleId; // ← remplacé String salle
+    private Long creneauId;
+    private Long salleId;
     private Long etudiantId;
     private Long juryId;
 
-    public SoutenanceRequest() {}
-
-    public LocalDateTime getDate() { return date; }
-    public void setDate(LocalDateTime date) { this.date = date; }
+    public Long getCreneauId() { return creneauId; }
+    public void setCreneauId(Long creneauId) { this.creneauId = creneauId; }
 
     public Long getSalleId() { return salleId; }
     public void setSalleId(Long salleId) { this.salleId = salleId; }

@@ -38,14 +38,12 @@ public class SalleController {
             map.put("localisation", salle.getLocalisation());
             map.put("disponible", salle.isDisponible());
 
-            // Infos soutenance active si présente
             if (salle.getSoutenanceActive() != null) {
                 Soutenance s = salle.getSoutenanceActive();
                 Map<String, Object> soutenanceMap = new LinkedHashMap<>();
                 soutenanceMap.put("id", s.getId());
                 soutenanceMap.put("date", s.getDate());
-                soutenanceMap.put("dateFin", s.getDate() != null
-                    ? s.getDate().plusMinutes(30) : null);
+                soutenanceMap.put("dateFin", s.getDate() != null ? s.getDate().plusMinutes(30) : null);
                 if (s.getEtudiant() != null) {
                     soutenanceMap.put("etudiantNom", s.getEtudiant().getNom());
                 }
@@ -53,7 +51,6 @@ public class SalleController {
             } else {
                 map.put("soutenanceActive", null);
             }
-
             return map;
         }).collect(Collectors.toList());
     }
@@ -62,13 +59,12 @@ public class SalleController {
     public ResponseEntity<?> createSalle(@RequestBody Salle salle) {
         try {
             Salle created = salleService.createSalle(salle);
-            // Retourner une Map propre sans boucle JSON
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("id", created.getId());
             map.put("nom", created.getNom());
             map.put("capacite", created.getCapacite());
             map.put("localisation", created.getLocalisation());
-            map.put("disponible", true); // nouvelle salle = toujours disponible
+            map.put("disponible", true);
             map.put("soutenanceActive", null);
             return ResponseEntity.ok(map);
         } catch (Exception e) {
@@ -120,44 +116,25 @@ public class SalleController {
         return ResponseEntity.ok(count + " salle(s) libérée(s) automatiquement.");
     }
 
-    // ← Affecter une soutenance à une salle
     @PatchMapping("/{salleId}/affecter-soutenance")
-    public ResponseEntity<?> affecterSoutenance(
-            @PathVariable Long salleId,
-            @RequestBody Map<String, Object> body) {
+    public ResponseEntity<?> affecterSoutenance(@PathVariable Long salleId, @RequestBody Map<String, Object> body) {
         try {
             Salle salle = salleService.getSalleById(salleId);
-
             Object soutenanceIdObj = body.get("soutenanceId");
-
             if (soutenanceIdObj != null) {
                 Long soutenanceId = Long.valueOf(soutenanceIdObj.toString());
-                Soutenance soutenance = soutenanceRepository.findById(soutenanceId)
-                        .orElseThrow(() -> new Exception("Soutenance non trouvée"));
-
-                // Vérifier que la salle est disponible
-                if (!salle.isDisponible()) {
-                    return ResponseEntity.badRequest()
-                            .body("Cette salle est déjà occupée.");
-                }
-
-                // Vérifier conflit horaire
+                Soutenance soutenance = soutenanceRepository.findById(soutenanceId).orElseThrow(() -> new Exception("Soutenance non trouvée"));
+                if (!salle.isDisponible()) return ResponseEntity.badRequest().body("Cette salle est déjà occupée.");
                 if (soutenance.getDate() != null) {
                     LocalDateTime start = soutenance.getDate();
                     LocalDateTime end = start.plusMinutes(30);
-                    List<Soutenance> conflicts = soutenanceRepository
-                            .findOverlappingBySalle(salleId, start, end);
-                    if (conflicts.stream().anyMatch(c -> !c.getId().equals(soutenanceId))) {
-                        return ResponseEntity.badRequest()
-                                .body("Conflit horaire : la salle est déjà occupée à ce créneau.");
-                    }
+                    List<Soutenance> conflicts = soutenanceRepository.findOverlappingBySalle(salleId, start, end);
+                    if (conflicts.stream().anyMatch(c -> !c.getId().equals(soutenanceId))) return ResponseEntity.badRequest().body("Conflit horaire : la salle est déjà occupée à ce créneau.");
                 }
-
                 soutenance.setSalle(salle);
                 soutenanceRepository.save(soutenance);
                 return ResponseEntity.ok("Soutenance affectée à la salle avec succès.");
             } else {
-                // Retirer l'affectation
                 List<Soutenance> toutes = soutenanceRepository.findAll();
                 for (Soutenance s : toutes) {
                     if (s.getSalle() != null && s.getSalle().getId().equals(salleId)) {

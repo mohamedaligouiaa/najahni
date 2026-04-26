@@ -1,10 +1,12 @@
 package com.example.soutenance.controller;
 
 import com.example.soutenance.dto.SoutenanceRequest;
+import com.example.soutenance.model.Creneau;
 import com.example.soutenance.model.Jury;
 import com.example.soutenance.model.Salle;
 import com.example.soutenance.model.Soutenance;
 import com.example.soutenance.model.User;
+import com.example.soutenance.repository.CreneauRepository;
 import com.example.soutenance.repository.JuryRepository;
 import com.example.soutenance.repository.SalleRepository;
 import com.example.soutenance.repository.SoutenanceRepository;
@@ -16,16 +18,19 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/soutenances")
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5175"}, allowCredentials = "true")
 public class SoutenanceController {
 
     @Autowired private SoutenanceRepository soutenanceRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private JuryRepository juryRepository;
     @Autowired private SalleRepository salleRepository;
+    @Autowired private CreneauRepository creneauRepository;
     @Autowired private SoutenanceService soutenanceService;
 
     @GetMapping("/etudiants")
@@ -40,10 +45,9 @@ public class SoutenanceController {
 
     @GetMapping
     public ResponseEntity<?> getAll() {
-        // Retourner une Map propre pour éviter boucle JSON Soutenance ↔ Salle
         List<Map<String, Object>> result = soutenanceRepository.findAll()
             .stream().map(this::soutenanceToMap)
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
         return ResponseEntity.ok(result);
     }
 
@@ -57,17 +61,17 @@ public class SoutenanceController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
     @GetMapping("/sans-salle")
     public ResponseEntity<?> getSansSalle() {
         List<Map<String, Object>> result = soutenanceRepository.findSanseSalle()
             .stream().map(this::soutenanceToMap)
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
         return ResponseEntity.ok(result);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable Long id,
-                                     @RequestBody SoutenanceRequest request) {
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody SoutenanceRequest request) {
         try {
             Soutenance soutenance = soutenanceRepository.findById(id)
                     .orElseThrow(() -> new Exception("Soutenance non trouvée"));
@@ -89,14 +93,13 @@ public class SoutenanceController {
         }
     }
 
-    // Map propre sans boucle JSON
     private Map<String, Object> soutenanceToMap(Soutenance s) {
-        Map<String, Object> map = new java.util.LinkedHashMap<>();
+        Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", s.getId());
-        map.put("date", s.getDate());
+        map.put("date", s.getCreneau() != null ? s.getCreneau().getDate() : null);
 
         if (s.getSalle() != null) {
-            Map<String, Object> salleMap = new java.util.LinkedHashMap<>();
+            Map<String, Object> salleMap = new LinkedHashMap<>();
             salleMap.put("id", s.getSalle().getId());
             salleMap.put("nom", s.getSalle().getNom());
             salleMap.put("localisation", s.getSalle().getLocalisation());
@@ -107,7 +110,7 @@ public class SoutenanceController {
         }
 
         if (s.getEtudiant() != null) {
-            Map<String, Object> etMap = new java.util.LinkedHashMap<>();
+            Map<String, Object> etMap = new LinkedHashMap<>();
             etMap.put("id", s.getEtudiant().getId());
             etMap.put("nom", s.getEtudiant().getNom());
             etMap.put("email", s.getEtudiant().getEmail());
@@ -117,7 +120,7 @@ public class SoutenanceController {
         }
 
         if (s.getJury() != null) {
-            Map<String, Object> juryMap = new java.util.LinkedHashMap<>();
+            Map<String, Object> juryMap = new LinkedHashMap<>();
             juryMap.put("id", s.getJury().getId());
             juryMap.put("nom", s.getJury().getNom());
             map.put("jury", juryMap);
@@ -128,9 +131,12 @@ public class SoutenanceController {
         return map;
     }
 
-    private Soutenance buildFromRequest(Soutenance soutenance,
-                                         SoutenanceRequest request) throws Exception {
-        soutenance.setDate(request.getDate());
+    private Soutenance buildFromRequest(Soutenance soutenance, SoutenanceRequest request) throws Exception {
+        if (request.getCreneauId() != null) {
+            Creneau creneau = creneauRepository.findById(request.getCreneauId())
+                    .orElseThrow(() -> new Exception("Créneau non trouvé"));
+            soutenance.setCreneau(creneau);
+        }
 
         if (request.getSalleId() != null) {
             Salle salle = salleRepository.findById(request.getSalleId())
