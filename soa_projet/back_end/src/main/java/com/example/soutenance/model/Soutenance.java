@@ -1,8 +1,8 @@
 package com.example.soutenance.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Table(name = "soutenances")
@@ -13,7 +13,11 @@ public class Soutenance {
     private Long id;
 
     private LocalDateTime date;
-    private String salle;
+
+    @OneToOne
+    @JoinColumn(name = "salle_id")
+    @JsonIgnoreProperties("soutenanceActive")
+    private Salle salle;
 
     @ManyToOne
     @JoinColumn(name = "etudiant_id")
@@ -23,48 +27,18 @@ public class Soutenance {
     @JoinColumn(name = "jury_id")
     private Jury jury;
 
-    public Soutenance() {
-    }
+    public Soutenance() {}
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public LocalDateTime getDate() {
-        return date;
-    }
-
-    public void setDate(LocalDateTime date) {
-        this.date = date;
-    }
-
-    public String getSalle() {
-        return salle;
-    }
-
-    public void setSalle(String salle) {
-        this.salle = salle;
-    }
-
-    public User getEtudiant() {
-        return etudiant;
-    }
-
-    public void setEtudiant(User etudiant) {
-        this.etudiant = etudiant;
-    }
-
-    public Jury getJury() {
-        return jury;
-    }
-
-    public void setJury(Jury jury) {
-        this.jury = jury;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public LocalDateTime getDate() { return date; }
+    public void setDate(LocalDateTime date) { this.date = date; }
+    public Salle getSalle() { return salle; }
+    public void setSalle(Salle salle) { this.salle = salle; }
+    public User getEtudiant() { return etudiant; }
+    public void setEtudiant(User etudiant) { this.etudiant = etudiant; }
+    public Jury getJury() { return jury; }
+    public void setJury(Jury jury) { this.jury = jury; }
 
     @Transient
     public LocalDateTime getEndTime() {
