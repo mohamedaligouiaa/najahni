@@ -1,20 +1,19 @@
 package com.example.soutenance.controller;
 
 import com.example.soutenance.dto.SoutenanceRequest;
+import com.example.soutenance.model.Creneau;
 import com.example.soutenance.model.Jury;
 import com.example.soutenance.model.Soutenance;
 import com.example.soutenance.model.User;
+import com.example.soutenance.repository.CreneauRepository;
 import com.example.soutenance.repository.JuryRepository;
 import com.example.soutenance.repository.SoutenanceRepository;
 import com.example.soutenance.repository.UserRepository;
 import com.example.soutenance.service.SoutenanceService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/soutenances")
@@ -30,11 +29,10 @@ public class SoutenanceController {
     private JuryRepository juryRepository;
 
     @Autowired
-    private SoutenanceService soutenanceService;
+    private CreneauRepository creneauRepository;
 
-    private User getAuthenticatedUser(HttpSession session) {
-        return (User) session.getAttribute("user");
-    }
+    @Autowired
+    private SoutenanceService soutenanceService;
 
     @GetMapping("/etudiants")
     public ResponseEntity<?> getEtudiants() {
@@ -52,14 +50,16 @@ public class SoutenanceController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody SoutenanceRequest request, HttpSession session) {
-        // Optionnel: Vérification du rôle Admin si nécessaire
-        // User user = getAuthenticatedUser(session);
-        // if (user == null || !"ADMIN".equals(user.getRole())) return ...
-
+    public ResponseEntity<?> create(@RequestBody SoutenanceRequest request) {
         try {
             Soutenance soutenance = new Soutenance();
-            soutenance.setDate(request.getDate());
+            
+            if (request.getCreneauId() != null) {
+                Creneau creneau = creneauRepository.findById(request.getCreneauId())
+                        .orElseThrow(() -> new Exception("Créneau non trouvé"));
+                soutenance.setCreneau(creneau);
+            }
+            
             soutenance.setSalle(request.getSalle());
             
             if (request.getEtudiantId() != null) {
@@ -86,7 +86,12 @@ public class SoutenanceController {
             Soutenance soutenance = soutenanceRepository.findById(id)
                     .orElseThrow(() -> new Exception("Soutenance non trouvée"));
             
-            soutenance.setDate(request.getDate());
+            if (request.getCreneauId() != null) {
+                Creneau creneau = creneauRepository.findById(request.getCreneauId())
+                        .orElseThrow(() -> new Exception("Créneau non trouvé"));
+                soutenance.setCreneau(creneau);
+            }
+            
             soutenance.setSalle(request.getSalle());
 
             if (request.getEtudiantId() != null) {

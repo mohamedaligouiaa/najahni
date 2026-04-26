@@ -1,10 +1,10 @@
 package com.example.soutenance.service;
 
 import com.example.soutenance.model.Jury;
-import com.example.soutenance.model.JuryMember;
 import com.example.soutenance.model.Soutenance;
 import com.example.soutenance.repository.JuryRepository;
 import com.example.soutenance.repository.SoutenanceRepository;
+import com.example.soutenance.repository.CreneauRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,35 +21,17 @@ public class SoutenanceService {
     @Autowired
     private JuryRepository juryRepository;
 
+    @Autowired
+    private CreneauRepository creneauRepository;
+
     public Soutenance saveSoutenance(Soutenance soutenance) throws Exception {
         Long id = soutenance.getId();
-        LocalDateTime start = soutenance.getDate();
-
-        if (start == null) {
-            return soutenanceRepository.save(soutenance);
-        }
-
-        // 1. Validation de la date
-        if (start.toLocalDate().isBefore(java.time.LocalDate.now())) {
-            throw new Exception("La date ne peut pas être dans le passé.");
-        }
         
-        if (start.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) {
-            throw new Exception("Les soutenances sont interdites le Dimanche.");
+        if (soutenance.getCreneau() == null) {
+            throw new Exception("Une soutenance doit être rattachée à un créneau.");
         }
 
-        // 2. Validation de l'heure
-        int hour = start.getHour();
-        int minute = start.getMinute();
-        
-        if (hour < 9) {
-            throw new Exception("La première soutenance doit commencer à 09:00.");
-        }
-        
-        if (hour > 15 || (hour == 15 && minute > 30)) {
-            throw new Exception("La dernière soutenance doit être terminée à 16:00 (Dernier début à 15:30).");
-        }
-
+        LocalDateTime start = soutenance.getCreneau().getDate();
         LocalDateTime end = start.plusMinutes(30);
 
         // 1. Étudiant (si présent)

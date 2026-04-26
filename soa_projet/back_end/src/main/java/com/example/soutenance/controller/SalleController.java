@@ -20,7 +20,7 @@ public class SalleController {
         // je fournis une liste fixe pour stopper l'erreur 404
         List<Map<String, Object>> salles = Arrays.asList("Salle A101", "Salle A102", "Amphi B", "Labo Info", "Visioconférence")
                 .stream()
-                .map(nom -> Map.of("id", (long) nom.hashCode(), "nom", nom))
+                .map(nom -> Map.<String, Object>of("id", (long) Math.abs(nom.hashCode()), "nom", nom))
                 .collect(Collectors.toList());
         
         return ResponseEntity.ok(salles);

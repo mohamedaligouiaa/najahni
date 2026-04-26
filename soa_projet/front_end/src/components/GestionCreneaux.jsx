@@ -23,7 +23,7 @@ const GestionCreneaux = ({ activeTab, globalSearch, setGlobalSearch }) => {
 
   const fetchData = async () => {
     try {
-      const res = await api.get('/soutenances');
+      const res = await api.get('/creneaux');
       setSoutenances(res.data);
     } catch (err) {
       console.error("Erreur chargement", err);
@@ -36,14 +36,14 @@ const GestionCreneaux = ({ activeTab, globalSearch, setGlobalSearch }) => {
   };
 
   const total = soutenances.length;
-  const occupees = soutenances.filter(s => s.etudiant).length;
+  const occupees = soutenances.filter(s => s.soutenance).length;
   const libres = total - occupees;
 
   const filteredSoutenances = soutenances.filter(s => {
     const dt = new Date(s.date);
     const dateLabel = dt.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).toLowerCase();
     const matchesSearch = dateLabel.includes(searchTerm.toLowerCase());
-    const matchesFilter = filterType === 'all' || (filterType === 'occupe' && s.etudiant) || (filterType === 'libre' && !s.etudiant);
+    const matchesFilter = filterType === 'all' || (filterType === 'occupe' && s.soutenance) || (filterType === 'libre' && !s.soutenance);
     return matchesSearch && matchesFilter;
   }).sort((a, b) => new Date(a.date) - new Date(b.date));
 
@@ -93,11 +93,10 @@ const GestionCreneaux = ({ activeTab, globalSearch, setGlobalSearch }) => {
         const dateTime = `${dateForm.date}T${dateForm.time}:00`;
         const payload = { date: dateTime };
         if (isEditing) {
-            const s = soutenances.find(item => item.id === currentId);
-            await api.put(`/soutenances/${currentId}`, { ...payload, salle: s.salle, etudiantId: s.etudiant?.id || null, juryId: s.jury?.id || null });
+            await api.put(`/creneaux/${currentId}`, payload);
             showMessage("Mise à jour réussie !");
         } else {
-            await api.post('/soutenances', payload);
+            await api.post('/creneaux', payload);
             showMessage("Créneau enregistré !");
         }
         setShowModal(false); fetchData();
@@ -211,10 +210,10 @@ const GestionCreneaux = ({ activeTab, globalSearch, setGlobalSearch }) => {
                         <tr key={s.id} className="group hover:bg-white/[0.02] transition-all">
                             <td className="px-12 py-10">
                                 <div className={`inline-flex items-center gap-3 px-5 py-2 rounded-full border ${
-                                    s.etudiant ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                    s.soutenance ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                                 }`}>
-                                    <div className={`w-2 h-2 rounded-full ${s.etudiant ? 'bg-rose-500 shadow-lg shadow-rose-500/50 animate-pulse' : 'bg-emerald-500'}`} />
-                                    <span className="text-[10px] font-black tracking-tighter uppercase">{s.etudiant ? 'Réservé' : 'Disponible'}</span>
+                                    <div className={`w-2 h-2 rounded-full ${s.soutenance ? 'bg-rose-500 shadow-lg shadow-rose-500/50 animate-pulse' : 'bg-emerald-500'}`} />
+                                    <span className="text-[10px] font-black tracking-tighter uppercase">{s.soutenance ? 'Réservé' : 'Disponible'}</span>
                                 </div>
                             </td>
                             <td className="px-12 py-10">

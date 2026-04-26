@@ -1,7 +1,6 @@
 package com.example.soutenance.repository;
 
 import com.example.soutenance.model.Soutenance;
-import com.example.soutenance.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,9 +14,9 @@ public interface SoutenanceRepository extends JpaRepository<Soutenance, Long> {
     boolean existsByEtudiantId(Long etudiantId);
 
     @Query("SELECT s FROM Soutenance s WHERE s.salle = :salle AND " +
-           "((s.date <= :start AND :start < FUNCTION('TIMESTAMPADD', MINUTE, 30, s.date)) OR " +
-           " (s.date < :end AND :end <= FUNCTION('TIMESTAMPADD', MINUTE, 30, s.date)) OR " +
-           " (:start <= s.date AND s.date < :end))")
+           "((s.creneau.date <= :start AND :start < FUNCTION('TIMESTAMPADD', MINUTE, 30, s.creneau.date)) OR " +
+           " (s.creneau.date < :end AND :end <= FUNCTION('TIMESTAMPADD', MINUTE, 30, s.creneau.date)) OR " +
+           " (:start <= s.creneau.date AND s.creneau.date < :end))")
     List<Soutenance> findOverlappingBySalle(@Param("salle") String salle, 
                                            @Param("start") LocalDateTime start, 
                                            @Param("end") LocalDateTime end);
@@ -26,7 +25,7 @@ public interface SoutenanceRepository extends JpaRepository<Soutenance, Long> {
     	       "JOIN s.jury j " +
     	       "JOIN j.members m " +
     	       "WHERE m.user.id = :userId " +
-    	       "AND s.date > :now " +
+    	       "AND s.creneau.date > :now " +
     	       "AND s.id NOT IN (SELECT n.soutenance.id FROM Note n WHERE n.membre.id = :userId)")
     	List<Soutenance> findAvailableByJury(
     	        @Param("userId") Long userId,
@@ -36,9 +35,9 @@ public interface SoutenanceRepository extends JpaRepository<Soutenance, Long> {
            "JOIN s.jury j " +
            "JOIN j.members m " +
            "WHERE m.user.id IN :userIds AND " +
-           "((s.date <= :start AND :start < FUNCTION('TIMESTAMPADD', MINUTE, 30, s.date)) OR " +
-           " (s.date < :end AND :end <= FUNCTION('TIMESTAMPADD', MINUTE, 30, s.date)) OR " +
-           " (:start <= s.date AND s.date < :end))")
+           "((s.creneau.date <= :start AND :start < FUNCTION('TIMESTAMPADD', MINUTE, 30, s.creneau.date)) OR " +
+           " (s.creneau.date < :end AND :end <= FUNCTION('TIMESTAMPADD', MINUTE, 30, s.creneau.date)) OR " +
+           " (:start <= s.creneau.date AND s.creneau.date < :end))")
     List<Soutenance> findOverlappingByJuryMembers(@Param("userIds") List<Long> userIds, 
                                                  @Param("start") LocalDateTime start, 
                                                  @Param("end") LocalDateTime end);

@@ -2,7 +2,6 @@ package com.example.soutenance.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Table(name = "soutenances")
@@ -12,7 +11,10 @@ public class Soutenance {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private LocalDateTime date;
+    @OneToOne
+    @JoinColumn(name = "creneau_id")
+    private Creneau creneau;
+
     private String salle;
 
     @ManyToOne
@@ -23,51 +25,30 @@ public class Soutenance {
     @JoinColumn(name = "jury_id")
     private Jury jury;
 
-    public Soutenance() {
-    }
+    public Soutenance() {}
 
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public Creneau getCreneau() { return creneau; }
+    public void setCreneau(Creneau creneau) { this.creneau = creneau; }
 
+    public String getSalle() { return salle; }
+    public void setSalle(String salle) { this.salle = salle; }
+
+    public User getEtudiant() { return etudiant; }
+    public void setEtudiant(User etudiant) { this.etudiant = etudiant; }
+
+    public Jury getJury() { return jury; }
+    public void setJury(Jury jury) { this.jury = jury; }
+
+    @Transient
     public LocalDateTime getDate() {
-        return date;
-    }
-
-    public void setDate(LocalDateTime date) {
-        this.date = date;
-    }
-
-    public String getSalle() {
-        return salle;
-    }
-
-    public void setSalle(String salle) {
-        this.salle = salle;
-    }
-
-    public User getEtudiant() {
-        return etudiant;
-    }
-
-    public void setEtudiant(User etudiant) {
-        this.etudiant = etudiant;
-    }
-
-    public Jury getJury() {
-        return jury;
-    }
-
-    public void setJury(Jury jury) {
-        this.jury = jury;
+        return creneau != null ? creneau.getDate() : null;
     }
 
     @Transient
     public LocalDateTime getEndTime() {
-        return date != null ? date.plusMinutes(30) : null;
+        return (creneau != null && creneau.getDate() != null) ? creneau.getDate().plusMinutes(30) : null;
     }
 }
