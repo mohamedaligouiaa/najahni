@@ -11,36 +11,28 @@ import java.util.List;
 public interface SoutenanceRepository extends JpaRepository<Soutenance, Long> {
     List<Soutenance> findByEtudiantId(Long etudiantId);
     
+    List<Soutenance> findByDate(LocalDateTime date);
+    
     boolean existsByEtudiantId(Long etudiantId);
 
-    @Query("SELECT s FROM Soutenance s WHERE s.salle.id = :salleId AND " +
-           "((s.creneau.date <= :start AND :start < FUNCTION('TIMESTAMPADD', MINUTE, 30, s.creneau.date)) OR " +
-           " (s.creneau.date < :end AND :end <= FUNCTION('TIMESTAMPADD', MINUTE, 30, s.creneau.date)) OR " +
-           " (:start <= s.creneau.date AND s.creneau.date < :end))")
+    @Query("SELECT s FROM Soutenance s WHERE s.salleId = :salleId AND " +
+           "((s.date <= :start AND :start < FUNCTION('TIMESTAMPADD', MINUTE, 30, s.date)) OR " +
+           " (s.date < :end AND :end <= FUNCTION('TIMESTAMPADD', MINUTE, 30, s.date)) OR " +
+           " (:start <= s.date AND s.date < :end))")
     List<Soutenance> findOverlappingBySalle(@Param("salleId") Long salleId, 
                                            @Param("start") LocalDateTime start, 
                                            @Param("end") LocalDateTime end);
 
-    @Query("SELECT s FROM Soutenance s " +
-    	       "JOIN s.jury j " +
-    	       "JOIN j.members m " +
-    	       "WHERE m.user.id = :userId " +
-    	       "AND s.creneau.date > :now " +
-    	       "AND s.id NOT IN (SELECT n.soutenance.id FROM Note n WHERE n.membre.id = :userId)")
-    	List<Soutenance> findAvailableByJury(
-    	        @Param("userId") Long userId,
-    	        @Param("now") LocalDateTime now);
-
-    @Query("SELECT s FROM Soutenance s " +
-           "JOIN s.jury j JOIN j.members m " +
-           "WHERE m.user.id IN :userIds AND " +
-           "((s.creneau.date <= :start AND :start < FUNCTION('TIMESTAMPADD', MINUTE, 30, s.creneau.date)) OR " +
-           " (s.creneau.date < :end AND :end <= FUNCTION('TIMESTAMPADD', MINUTE, 30, s.creneau.date)) OR " +
-           " (:start <= s.creneau.date AND s.creneau.date < :end))")
-    List<Soutenance> findOverlappingByJuryMembers(@Param("userIds") List<Long> userIds, 
-                                                 @Param("start") LocalDateTime start, 
-                                                 @Param("end") LocalDateTime end);
-
-    @Query("SELECT s FROM Soutenance s WHERE s.salle IS NULL")
-    List<Soutenance> findSanseSalle();
+    @Query("SELECT s FROM Soutenance s WHERE s.salleId IS NULL")
+    List<Soutenance> findSansSalle();
+    
+    // Note: To check jury availability, it should ideally be handled by communicating with the Jury service.
+    // We provide a basic query here assuming the jury ID is checked against existing soutenances.
+    @Query("SELECT s FROM Soutenance s WHERE s.juryId = :juryId AND " +
+           "((s.date <= :start AND :start < FUNCTION('TIMESTAMPADD', MINUTE, 30, s.date)) OR " +
+           " (s.date < :end AND :end <= FUNCTION('TIMESTAMPADD', MINUTE, 30, s.date)) OR " +
+           " (:start <= s.date AND s.date < :end))")
+    List<Soutenance> findOverlappingByJury(@Param("juryId") Long juryId, 
+                                          @Param("start") LocalDateTime start, 
+                                          @Param("end") LocalDateTime end);
 }

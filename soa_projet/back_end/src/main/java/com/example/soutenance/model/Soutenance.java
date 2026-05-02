@@ -1,6 +1,5 @@
 package com.example.soutenance.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -12,47 +11,43 @@ public class Soutenance {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
-    @JoinColumn(name = "creneau_id")
-    private Creneau creneau;
+    @Column(name = "etudiant_id")
+    private Long etudiantId;
 
-    @ManyToOne
-    @JoinColumn(name = "salle_id")
-    @JsonIgnoreProperties("soutenanceActive")
-    private Salle salle;
+    @Column(name = "encadrant_id")
+    private Long encadrantId;
 
-    @ManyToOne
-    @JoinColumn(name = "etudiant_id")
-    private User etudiant;
+    @Column(name = "salle_id")
+    private Long salleId;
 
-    @ManyToOne
-    @JoinColumn(name = "jury_id")
-    private Jury jury;
+    @Column(name = "jury_id")
+    private Long juryId;
+
+    @Column(name = "date")
+    private LocalDateTime date;
 
     public Soutenance() {}
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public Creneau getCreneau() { return creneau; }
-    public void setCreneau(Creneau creneau) { this.creneau = creneau; }
+    public Long getEtudiantId() { return etudiantId; }
+    public void setEtudiantId(Long etudiantId) { this.etudiantId = etudiantId; }
 
-    public Salle getSalle() { return salle; }
-    public void setSalle(Salle salle) { this.salle = salle; }
+    public Long getEncadrantId() { return encadrantId; }
+    public void setEncadrantId(Long encadrantId) { this.encadrantId = encadrantId; }
 
-    public User getEtudiant() { return etudiant; }
-    public void setEtudiant(User etudiant) { this.etudiant = etudiant; }
+    public Long getSalleId() { return salleId; }
+    public void setSalleId(Long salleId) { this.salleId = salleId; }
 
-    public Jury getJury() { return jury; }
-    public void setJury(Jury jury) { this.jury = jury; }
+    public Long getJuryId() { return juryId; }
+    public void setJuryId(Long juryId) { this.juryId = juryId; }
 
-    @Transient
-    public LocalDateTime getDate() {
-        return creneau != null ? creneau.getDate() : null;
-    }
+    public LocalDateTime getDate() { return date; }
+    public void setDate(LocalDateTime date) { this.date = date; }
 
     @Transient
     public LocalDateTime getEndTime() {
-        return (creneau != null && creneau.getDate() != null) ? creneau.getDate().plusMinutes(30) : null;
+        return date != null ? date.plusMinutes(30) : null;
     }
 }

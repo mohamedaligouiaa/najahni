@@ -95,8 +95,6 @@ const GestionCreneaux = ({ activeTab, globalSearch }) => {
   });
 
   const total = soutenances.length;
-  const occupes = soutenances.filter(s => s.soutenance).length;
-  const libres = total - occupes;
 
   return (
     <div className="space-y-8 animate-fade-in pb-20">
@@ -113,20 +111,14 @@ const GestionCreneaux = ({ activeTab, globalSearch }) => {
       )}
 
       {/* STATS (Structure Salles) */}
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          { label: 'Total Créneaux', value: total, color: 'border-slate-700 text-slate-300', dot: 'bg-slate-500' },
-          { label: 'Réservés', value: occupes, color: 'border-rose-500/30 text-rose-400', dot: 'bg-rose-500' },
-          { label: 'Disponibles', value: libres, color: 'border-emerald-500/30 text-emerald-400', dot: 'bg-emerald-500' },
-        ].map((s, i) => (
-          <div key={i} className={`flex items-center justify-between bg-slate-900 border ${s.color} rounded-2xl px-8 py-5`}>
-            <div className="flex items-center gap-3">
-              <span className={`w-2.5 h-2.5 rounded-full ${s.dot}`} />
-              <span className="text-slate-400 font-bold text-sm uppercase tracking-widest">{s.label}</span>
-            </div>
-            <span className={`text-4xl font-black ${s.color.split(' ')[1]}`}>{s.value}</span>
+      <div className="grid grid-cols-1 gap-4">
+        <div className="flex items-center justify-between bg-slate-900 border border-slate-700 rounded-2xl px-8 py-5">
+          <div className="flex items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-500" />
+            <span className="text-slate-400 font-bold text-sm uppercase tracking-widest">Total Créneaux Programmés</span>
           </div>
-        ))}
+          <span className="text-4xl font-black text-slate-300">{total}</span>
+        </div>
       </div>
 
       {/* PAGE CRÉER (Style Salles) */}
@@ -202,14 +194,6 @@ const GestionCreneaux = ({ activeTab, globalSearch }) => {
                         <p className="text-slate-600 font-mono text-xs">#{slot.id}</p>
                       </div>
                     </div>
-                    <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black border ${
-                      slot.soutenance 
-                        ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' 
-                        : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${slot.soutenance ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'}`} />
-                      {slot.soutenance ? 'Occupé' : 'Libre'}
-                    </span>
                   </div>
 
                   <div className="flex flex-col gap-2.5 text-sm">

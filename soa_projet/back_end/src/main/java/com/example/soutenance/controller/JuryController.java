@@ -2,6 +2,13 @@ package com.example.soutenance.controller;
 
 import com.example.soutenance.dto.NoteSubmission;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.example.soutenance.model.Jury;
 import com.example.soutenance.model.Note;
@@ -16,8 +23,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
 import com.example.soutenance.repository.UserRepository;
+import com.example.soutenance.repository.SalleRepository;
+import com.example.soutenance.model.Salle;
 import com.example.soutenance.dto.JuryRequest;
 import com.example.soutenance.dto.JuryMemberRequest;
 import com.example.soutenance.model.JuryMember;
@@ -31,6 +39,7 @@ public class JuryController {
     @Autowired private NoteRepository noteRepository;
     @Autowired private JuryRepository juryRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private SalleRepository salleRepository;
 
     private User getAuthenticatedUser(HttpSession session) {
         return (User) session.getAttribute("user");
@@ -43,35 +52,50 @@ public class JuryController {
         map.put("date", s.getDate());
 
         // Salle — objet simplifié, pas de soutenanceActive pour éviter boucle
-        if (s.getSalle() != null) {
-            Map<String, Object> salleMap = new LinkedHashMap<>();
-            salleMap.put("id", s.getSalle().getId());
-            salleMap.put("nom", s.getSalle().getNom());
-            salleMap.put("localisation", s.getSalle().getLocalisation());
-            salleMap.put("capacite", s.getSalle().getCapacite());
-            salleMap.put("disponible", s.getSalle().isDisponible()); // @Transient calculé
-            map.put("salle", salleMap);
+        if (s.getSalleId() != null) {
+            Salle salle = salleRepository.findById(s.getSalleId()).orElse(null);
+            if (salle != null) {
+                Map<String, Object> salleMap = new LinkedHashMap<>();
+                salleMap.put("id", salle.getId());
+                salleMap.put("nom", salle.getNom());
+                salleMap.put("localisation", salle.getLocalisation());
+                salleMap.put("capacite", salle.getCapacite());
+                salleMap.put("disponible", true);
+                map.put("salle", salleMap);
+            } else {
+                map.put("salle", null);
+            }
         } else {
             map.put("salle", null);
         }
 
         // Étudiant simplifié
-        if (s.getEtudiant() != null) {
-            Map<String, Object> etudiantMap = new LinkedHashMap<>();
-            etudiantMap.put("id", s.getEtudiant().getId());
-            etudiantMap.put("nom", s.getEtudiant().getNom());
-            etudiantMap.put("email", s.getEtudiant().getEmail());
-            map.put("etudiant", etudiantMap);
+        if (s.getEtudiantId() != null) {
+            User etudiant = userRepository.findById(s.getEtudiantId()).orElse(null);
+            if (etudiant != null) {
+                Map<String, Object> etudiantMap = new LinkedHashMap<>();
+                etudiantMap.put("id", etudiant.getId());
+                etudiantMap.put("nom", etudiant.getNom());
+                etudiantMap.put("email", etudiant.getEmail());
+                map.put("etudiant", etudiantMap);
+            } else {
+                map.put("etudiant", null);
+            }
         } else {
             map.put("etudiant", null);
         }
 
         // Jury simplifié
-        if (s.getJury() != null) {
-            Map<String, Object> juryMap = new LinkedHashMap<>();
-            juryMap.put("id", s.getJury().getId());
-            juryMap.put("nom", s.getJury().getNom());
-            map.put("jury", juryMap);
+        if (s.getJuryId() != null) {
+            Jury jury = juryRepository.findById(s.getJuryId()).orElse(null);
+            if (jury != null) {
+                Map<String, Object> juryMap = new LinkedHashMap<>();
+                juryMap.put("id", jury.getId());
+                juryMap.put("nom", jury.getNom());
+                map.put("jury", juryMap);
+            } else {
+                map.put("jury", null);
+            }
         } else {
             map.put("jury", null);
         }
@@ -203,9 +227,18 @@ public class JuryController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access denied");
         }
 
-        List<Map<String, Object>> result = soutenanceRepository
-                .findAvailableByJury(user.getId(), LocalDateTime.now())
+        LocalDateTime now = LocalDateTime.now();
+        List<Map<String, Object>> result = soutenanceRepository.findAll()
                 .stream()
+                .filter(s -> s.getJuryId() != null)
+                .filter(s -> {
+                    // Chercher si cet utilisateur fait partie du jury
+                    Jury jury = juryRepository.findById(s.getJuryId()).orElse(null);
+                    if (jury == null) return false;
+                    return jury.getMembers().stream()
+                            .anyMatch(m -> m.getUser().getId().equals(user.getId()));
+                })
+                .filter(s -> s.getDate() != null && s.getDate().isAfter(now))
                 .map(this::soutenanceToMap)
                 .collect(java.util.stream.Collectors.toList());
 

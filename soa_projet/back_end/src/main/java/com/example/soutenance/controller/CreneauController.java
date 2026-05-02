@@ -20,6 +20,7 @@ public class CreneauController {
     @Autowired
     private CreneauRepository creneauRepository;
 
+
     @GetMapping
     public ResponseEntity<?> getAll() {
         List<Map<String, Object>> result = creneauRepository.findAll()
@@ -65,7 +66,6 @@ public class CreneauController {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", c.getId());
         map.put("date", c.getDate());
-        map.put("soutenance", c.getSoutenance() != null ? "OCCUPE" : null);
         return map;
     }
 

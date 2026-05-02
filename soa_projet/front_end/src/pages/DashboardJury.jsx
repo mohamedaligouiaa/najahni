@@ -262,7 +262,7 @@ const DashboardJury = () => {
                         </td>
                         <td className="px-10 py-6">
                            <div className="flex items-center gap-2 text-slate-300">
-                             <MapPin size={14} className="text-slate-500" /> {s.salle}
+                             <MapPin size={14} className="text-slate-500" /> {s.salle ? s.salle.nom : 'N/A'}
                            </div>
                         </td>
                         <td className="px-10 py-6 text-right">
@@ -296,7 +296,7 @@ const DashboardJury = () => {
                         <option value="">Sélectionnez une session...</option>
                         {soutenances.map(s => (
                           <option key={s.id} value={s.id}>
-                            {s.etudiant?.nom} - {s.date} ({s.salle})
+                            {s.etudiant?.nom} - {s.date} ({s.salle ? s.salle.nom : 'N/A'})
                           </option>
                         ))}
                       </select>
