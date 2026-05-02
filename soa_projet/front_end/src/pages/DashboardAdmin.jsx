@@ -5,6 +5,7 @@ import api from '../api/axios';
 import GestionJury from '../components/GestionJury';
 import GestionCreneaux from '../components/GestionCreneaux';
 import GestionSalles from '../components/GestionSalles';
+import GestionSoutenances from '../components/GestionSoutenances';
 
 const DashboardAdmin = () => {
   const navigate = useNavigate();
@@ -60,6 +61,13 @@ const DashboardAdmin = () => {
       subItems: [
         { name: 'Ajouter Créneaux', tab: 'Creneau-Ajouter', icon: <Plus size={16} /> },
         { name: 'Gérer Créneaux',   tab: 'Creneau-Gerer',   icon: <Settings size={16} /> }
+      ]
+    },
+    {
+      name: 'Gestion des Soutenances',
+      icon: <BookOpen size={20} />,
+      subItems: [
+        { name: 'Gérer les soutenances', tab: 'Soutenance-Gérer', icon: <Settings size={16} /> }
       ]
     },
     {
@@ -288,10 +296,10 @@ const DashboardAdmin = () => {
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Accès rapide</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
+                    { label: 'Gérer soutenances',    tab: 'Soutenance-Gérer', icon: <BookOpen size={18} />,      color: 'violet' },
                     { label: 'Ajouter une salle',   tab: 'Salle-Créer',      icon: <DoorOpen size={18} />,      color: 'violet' },
                     { label: 'Gérer les salles',     tab: 'Salle-Gérer',      icon: <Settings size={18} />,      color: 'slate' },
                     { label: 'Nouveau créneau',      tab: 'Creneau-Ajouter',  icon: <Calendar size={18} />,      color: 'indigo' },
-                    { label: 'Gérer créneaux',       tab: 'Creneau-Gerer',    icon: <BookOpen size={18} />,      color: 'slate' },
                   ].map((item, i) => (
                     <button
                       key={i}
@@ -313,6 +321,13 @@ const DashboardAdmin = () => {
               activeTab={activeTab}
               onSallesChange={fetchSalles}
             />
+          )}
+
+          {/* ── SOUTENANCES ── */}
+          {activeTab.startsWith('Soutenance-') && (
+            <div className="animate-fade-in">
+              <GestionSoutenances activeTab={activeTab} />
+            </div>
           )}
 
           {/* ── JURY ── */}

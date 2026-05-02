@@ -1,16 +1,8 @@
 package com.example.soutenance.controller;
 
 import com.example.soutenance.dto.SoutenanceRequest;
-import com.example.soutenance.model.Creneau;
-import com.example.soutenance.model.Jury;
-import com.example.soutenance.model.Salle;
 import com.example.soutenance.model.Soutenance;
-import com.example.soutenance.model.User;
-import com.example.soutenance.repository.CreneauRepository;
-import com.example.soutenance.repository.JuryRepository;
-import com.example.soutenance.repository.SalleRepository;
 import com.example.soutenance.repository.SoutenanceRepository;
-import com.example.soutenance.repository.UserRepository;
 import com.example.soutenance.service.SoutenanceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -27,21 +19,7 @@ import java.util.stream.Collectors;
 public class SoutenanceController {
 
     @Autowired private SoutenanceRepository soutenanceRepository;
-    @Autowired private UserRepository userRepository;
-    @Autowired private JuryRepository juryRepository;
-    @Autowired private SalleRepository salleRepository;
-    @Autowired private CreneauRepository creneauRepository;
     @Autowired private SoutenanceService soutenanceService;
-
-    @GetMapping("/etudiants")
-    public ResponseEntity<?> getEtudiants() {
-        return ResponseEntity.ok(userRepository.findByRole("ETUDIANT"));
-    }
-
-    @GetMapping("/jurys")
-    public ResponseEntity<?> getJurys() {
-        return ResponseEntity.ok(juryRepository.findAll());
-    }
 
     @GetMapping
     public ResponseEntity<?> getAll() {
@@ -64,7 +42,7 @@ public class SoutenanceController {
 
     @GetMapping("/sans-salle")
     public ResponseEntity<?> getSansSalle() {
-        List<Map<String, Object>> result = soutenanceRepository.findSanseSalle()
+        List<Map<String, Object>> result = soutenanceRepository.findSansSalle()
             .stream().map(this::soutenanceToMap)
             .collect(Collectors.toList());
         return ResponseEntity.ok(result);
@@ -96,72 +74,20 @@ public class SoutenanceController {
     private Map<String, Object> soutenanceToMap(Soutenance s) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", s.getId());
-        map.put("date", s.getCreneau() != null ? s.getCreneau().getDate() : null);
-
-        if (s.getSalle() != null) {
-            Map<String, Object> salleMap = new LinkedHashMap<>();
-            salleMap.put("id", s.getSalle().getId());
-            salleMap.put("nom", s.getSalle().getNom());
-            salleMap.put("localisation", s.getSalle().getLocalisation());
-            salleMap.put("capacite", s.getSalle().getCapacite());
-            map.put("salle", salleMap);
-        } else {
-            map.put("salle", null);
-        }
-
-        if (s.getEtudiant() != null) {
-            Map<String, Object> etMap = new LinkedHashMap<>();
-            etMap.put("id", s.getEtudiant().getId());
-            etMap.put("nom", s.getEtudiant().getNom());
-            etMap.put("email", s.getEtudiant().getEmail());
-            map.put("etudiant", etMap);
-        } else {
-            map.put("etudiant", null);
-        }
-
-        if (s.getJury() != null) {
-            Map<String, Object> juryMap = new LinkedHashMap<>();
-            juryMap.put("id", s.getJury().getId());
-            juryMap.put("nom", s.getJury().getNom());
-            map.put("jury", juryMap);
-        } else {
-            map.put("jury", null);
-        }
-
+        map.put("date", s.getDate());
+        map.put("salleId", s.getSalleId());
+        map.put("etudiantId", s.getEtudiantId());
+        map.put("encadrantId", s.getEncadrantId());
+        map.put("juryId", s.getJuryId());
         return map;
     }
 
-    private Soutenance buildFromRequest(Soutenance soutenance, SoutenanceRequest request) throws Exception {
-        if (request.getCreneauId() != null) {
-            Creneau creneau = creneauRepository.findById(request.getCreneauId())
-                    .orElseThrow(() -> new Exception("Créneau non trouvé"));
-            soutenance.setCreneau(creneau);
-        }
-
-        if (request.getSalleId() != null) {
-            Salle salle = salleRepository.findById(request.getSalleId())
-                    .orElseThrow(() -> new Exception("Salle non trouvée"));
-            soutenance.setSalle(salle);
-        } else {
-            soutenance.setSalle(null);
-        }
-
-        if (request.getEtudiantId() != null) {
-            User etudiant = userRepository.findById(request.getEtudiantId())
-                    .orElseThrow(() -> new Exception("Étudiant non trouvé"));
-            soutenance.setEtudiant(etudiant);
-        } else {
-            soutenance.setEtudiant(null);
-        }
-
-        if (request.getJuryId() != null) {
-            Jury jury = juryRepository.findById(request.getJuryId())
-                    .orElseThrow(() -> new Exception("Jury non trouvé"));
-            soutenance.setJury(jury);
-        } else {
-            soutenance.setJury(null);
-        }
-
+    private Soutenance buildFromRequest(Soutenance soutenance, SoutenanceRequest request) {
+        soutenance.setEtudiantId(request.getEtudiantId());
+        soutenance.setEncadrantId(request.getEncadrantId());
+        soutenance.setSalleId(request.getSalleId());
+        soutenance.setJuryId(request.getJuryId());
+        soutenance.setDate(request.getDate());
         return soutenance;
     }
 }

@@ -24,6 +24,12 @@ public class EtudiantController {
     
     @Autowired
     private NoteRepository noteRepository;
+    
+    @Autowired
+    private com.example.soutenance.repository.SalleRepository salleRepository;
+    
+    @Autowired
+    private com.example.soutenance.repository.UserRepository userRepository;
 
     private User getAuthenticatedUser(HttpSession session) {
         return (User) session.getAttribute("user");
@@ -40,7 +46,32 @@ public class EtudiantController {
         Soutenance soutenance = soutenances.isEmpty() ? null : soutenances.get(0);
         
         Map<String, Object> response = new HashMap<>();
-        response.put("soutenance", soutenance);
+        
+        if (soutenance != null) {
+            Map<String, Object> soutenanceMap = new HashMap<>();
+            soutenanceMap.put("id", soutenance.getId());
+            soutenanceMap.put("date", soutenance.getDate());
+            
+            // Get Salle name
+            if (soutenance.getSalleId() != null) {
+                com.example.soutenance.model.Salle salle = salleRepository.findById(soutenance.getSalleId()).orElse(null);
+                soutenanceMap.put("salle", salle != null ? salle.getNom() : "N/A");
+            } else {
+                soutenanceMap.put("salle", "N/A");
+            }
+            
+            // Get Encadrant name
+            if (soutenance.getEncadrantId() != null) {
+                User encadrant = userRepository.findById(soutenance.getEncadrantId()).orElse(null);
+                soutenanceMap.put("encadrant", encadrant != null ? encadrant.getNom() : "N/A");
+            } else {
+                soutenanceMap.put("encadrant", "N/A");
+            }
+            
+            response.put("soutenance", soutenanceMap);
+        } else {
+            response.put("soutenance", null);
+        }
         
         if (soutenance != null) {
             List<Note> notes = noteRepository.findBySoutenanceId(soutenance.getId());
